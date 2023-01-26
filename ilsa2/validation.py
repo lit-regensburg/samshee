@@ -1,5 +1,8 @@
+from jsonschema import validate as schemaval
 import itertools
 import re
+import types
+
 from ilsa2.sectionedsheet import SectionedSheet
 
 #
@@ -303,3 +306,20 @@ nextseq1k2kschema = {
         }
     }
 }
+
+
+
+def validate(doc: SectionedSheet, validation):
+    # TODO validation may also contain schema URLs
+    if validation is None:
+        schemata = []
+    elif type(validation) == list:
+        pass
+    else:
+        validation = [validation]
+
+    for schema in validation:
+        if(type(schema) == dict):
+            schemaval(instance=doc, schema=schema)
+        elif(type(schema) == types.FunctionType):
+            schema(doc)

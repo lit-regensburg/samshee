@@ -1,26 +1,12 @@
-from jsonschema import validate
 import re
 from collections import OrderedDict
-import types
 
-from ilsa2.sectionedsheet import SectionedSheet, settings_to_string, data_to_string
-from ilsa2.validation import illuminasamplesheetv2schema, illuminasamplesheetv2logic
+from ilsa2.sectionedsheet import Settings, SectionedSheet
+from ilsa2.validation import validate, illuminasamplesheetv2schema, illuminasamplesheetv2logic
 
 class SampleSheetV2:
-    def __init__(self, secsheet: SectionedSheet, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]):
-        if validation is None:
-            schemata = []
-        elif type(validation) == list:
-            pass
-        else:
-            validation = [validation]
-
-        for schema in validation:
-            if(type(schema) == dict):
-                validate(instance=secsheet, schema=schema)
-            elif(type(schema) == types.FunctionType):
-                schema(secsheet)
-
+    def __init__(self, secsheet: SectionedSheet = None, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]):
+        validate(secsheet, validation)
         def secname(k):
             secsel = re.compile("^(.*)_(Settings|Data)$")
             m = re.match(secsel, k)
@@ -40,23 +26,23 @@ class SampleSheetV2:
                     self.applications[sectionname]= dict()
                 self.applications[sectionname]['data'] = secsheet[key]
             elif key == 'Header':
-                self.header = secsheet['Header']
+                self.header = Settings(secsheet['Header'])
             elif key == 'Reads':
                 self.reads = secsheet['Reads']
 
-    def to_string(self):
-        res = ""
+
+    def to_sectionedsheet(self):
+        res = SectionedSheet(OrderedDict())
         if 'header' in self.__dict__.keys():
-            res += '[Header]\n'
-            res += settings_to_string(self.header)
+            res['Header'] = self.header
         if 'Reads' in self.__dict__.keys():
-            res += '[Reads]\n'
-            res += settings_to_string(self.reads)
+            res['Reads'] = self.reads
         for appname, app in self.applications.items():
-            if 'settings' in app:
-                res += f"[{appname}_Settings]\n"
-                res += settings_to_string(app['settings'])
-            if 'data' in app:
-                res += f"[{appname}_Data]\n"
-                res += data_to_string(app['data'])
-        return(res)
+            if( 'settings' in app ):
+                res[appname + "_Settings"] = app['settings']
+            if( 'data' in app ):
+                res[appname + "_Data"] = app['data']
+        return res
+
+    def __str__(self):
+        return(str(self.to_sectionedsheet()))
