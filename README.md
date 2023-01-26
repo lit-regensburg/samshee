@@ -31,7 +31,13 @@ with open(filename + '.new', "w") as fh:
     sheet.write(fh)
 ```
 
-Changes that lead to a sample sheet that 
+This will give
+
+``` 
+Exception: Minimal index distance is 1 which is less than the expected minimal index distance of 3
+```
+
+The first two validators (`illuminasamplesheetv2schema` and `illuminasamplesheetv2logic`) are highly recommended and are meant to enforce illumina specifications so that the sample sheet is accepted by their tools.
 
 ## SectionedSheet
 A sectioned sheet is a text file that contains one or more ordered sections. Every section starts with a section header, enclosed in square brackets, e.g. `[Reads]`. Any string on the same line after the section header is ignored.
@@ -53,7 +59,25 @@ A SampleSheetV2 is a SectionedSheet that contains a defined set of sections. Eve
 Admissible values and required fields for the `Header`, `Reads` settings as well as for the `Sequencing` and `BCLConvert` "Applications" are given in the illumina document
 [Sample Sheet v2 Settings](https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm).
 
-Generally parsing in this library is agnostic. Input must only adhere to the SectionedSheet spec given above. Further validation can happen by json schema validation or calling a function with the SectionedSheet as an argument. By default the requirements in the illumina document above are checked. Additional checks on the SectionedSheet can be performed when constructing the SampleSheet, by including any schema or function in the `validation` array:
+Generally parsing in this library is agnostic. Input must only adhere to the SectionedSheet spec given above. Further validation can happen by json schema validation or calling a function with the SectionedSheet as an argument, i.e.
+
+``` python
+def my_validator(doc: SectionedSheet) -> None:
+    if 'myapp' not in doc:
+        raise Exception('sheet does not include settings for myapp.')
+    pass
+```
+
+This would be equivalent to a json-schema
+
+``` json
+{
+    "type": "object",
+    "required": ["myapp"]
+}
+```
+
+By default the only the requirements in the illumina document above are checked. Additional checks on the SectionedSheet can be performed when constructing the SampleSheet, by including any schema or function in the `validation` array (see also the examples at the beginning of this document):
 
 ``` python
 from ilsa2 import SectionedSheet, SampleSheetV2, read_sectionedsheet
