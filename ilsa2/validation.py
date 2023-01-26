@@ -289,6 +289,12 @@ def check_index_distance(doc: SectionedSheet, mindist = 3):
 
 #this is implemented according to https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm
 # but seems to be false (there are UMIs that are longer than 10)
+# after a call with illumina support it turns out indices must not be longer than 10 cycles,
+# but UMIs may be.
+# UMIs should always be in Index2.
+# So Index1 must be longer than 10 and Index2 must ONLY be longer than 10 if it contains the UMIs.
+# Basespace in that case sets OverrideCycles accordingly
+#
 nextseq1k2kschema = {
     "type": "object",
     "required": ["Header", "Reads"],
@@ -300,12 +306,20 @@ nextseq1k2kschema = {
                     "maximum": 10
                 },
                 "Index2Cycles": {
-                    "maximum": 10
+                    "maximum": 24
                 },
             }
         }
     }
 }
+def nextseq1k2klogic(doc: SectionedSheet):
+    if 'BCLConvert_Settings' in doc:
+        if 'OverrideCycles' in doc['BCLConvert_Settings']:
+            cycles = parse_overrideCycles(doc['BCLConvert_Settings']['OverrideCycles'])
+            if 'U' in cycles['Index1Cycles']:
+                raise Exception("Index1 typically does not contain UMIs")
+            if ('Index2Cycles' in cycles) and (not 'U' in cycles['Index2Cycles']):
+                raise Exception("Reads.Index2 must have a maximum length of 10 if it contains only an index and no UMIs.")
 
 
 
