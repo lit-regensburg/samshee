@@ -312,6 +312,7 @@ nextseq1k2kschema = {
         }
     }
 }
+
 def nextseq1k2klogic(doc: SectionedSheet):
     if 'BCLConvert_Settings' in doc:
         if 'OverrideCycles' in doc['BCLConvert_Settings']:
@@ -325,6 +326,8 @@ def nextseq1k2klogic(doc: SectionedSheet):
 
 def validate(doc: SectionedSheet, validation):
     # TODO validation may also contain schema URLs
+    # TODO use smarter error handling and return lists of errors.
+    # see https://python-jsonschema.readthedocs.io/en/stable/errors/
     if validation is None:
         schemata = []
     elif type(validation) == list:

@@ -52,6 +52,10 @@ class SectionedSheet(OrderedDict[str, Section]):
             res += str(secval)
         return(res)
 
+    def write(self, filehandle):
+        filehandle.write(str(self))
+
+
 
 def parse_value(contents: str) -> ValueType:
     try:
