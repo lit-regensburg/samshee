@@ -30,7 +30,7 @@ def parse_value(contents: str) -> ValueType:
 def parse_settings(contents: str) -> Settings:
     res = OrderedDict()
     for line in contents.split("\n"):
-        (key, value) = line.split(",")
+        (key, value) = line.rstrip(",").split(",")
         #try:
         res[key] = parse_value(value)
         #except ValueError as exc:
@@ -62,7 +62,7 @@ def parse_sectionedsheet(contents: str, explicitly_settings_section = ["header",
     _section_pattern = re.compile(r"\[(\w*)\][^\n]*\n([^\[]*)")
     res = SectionedSheet(OrderedDict())
     for (name, content) in re.findall(_section_pattern, contents):
-        if name.lower().endswith("_settings") | (name.lower() in explicitly_settings_section):
+        if name.lower().endswith("settings") | (name.lower() in explicitly_settings_section):
             s = parse_settings(content.rstrip("\n "))
             res[name] = s
         else:
