@@ -162,13 +162,20 @@ def parse_overrideCycles(cyclestr : str) -> dict:
         for letter, freq in matches:
             res += letter * int(freq)
         return res
+    def is_read(s: str) -> bool:
+        return 'Y' in s
 
     cycles = cyclestr.split(";")
     if len(cycles) < 1:
         raise Exception(f"OverrideCycles {cyclestr} cannot be parsed to a cycle sequence.")
     res = {"Read1Cycles": expand(cycles[0])}
     if( len(cycles) == 2 ):
-        res['Read2Cycles'] = expand(cycles[1])
+        # cycles[1] may now either be the second read, or the first index
+        cyc = expand(cycles[1])
+        if is_read(cyc):
+            res['Read2Cycles'] = cyc
+        else:
+            res['Index1Cycles'] = cyc
     elif( len(cycles) == 3 ):
         res['Index1Cycles'] = expand(cycles[1])
         res['Read2Cycles'] = expand(cycles[2])
@@ -180,6 +187,14 @@ def parse_overrideCycles(cyclestr : str) -> dict:
         pass
     else:
         raise Exception(f"OverrideCycles {cyclestr} defines too many elements.")
+    if not is_read(res['Read1Cycles']):
+        raise Exception(f"Read1Cycles entry in OverrideCycles is not a read: {res['Read1Cycles']}")
+    if ( 'Read2Cycles' in res ) and (not is_read(res['Read2Cycles'])):
+        raise Exception(f"Read2Cycles entry in OverrideCycles is not a read: {res['Read2Cycles']}")
+    if ( 'Index1Cycles' in res ) and (is_read(res['Index1Cycles'])):
+        raise Exception(f"Index1Cycles entry in OverrideCycles contains reads: {res['Index1Cycles']}")
+    if ( 'Index2Cycles' in res ) and (is_read(res['Index2Cycles'])):
+        raise Exception(f"Index2Cycles entry in OverrideCycles contains reads: {res['Index2Cycles']}")
     return res
 
 
@@ -269,6 +284,8 @@ def check_index_distance(doc: SectionedSheet, mindist = 3):
         raise Exception(f"Minimal index distance is {minimal_index_distance(index)} which is less than the expected minimal index distance of {mindist}")
 
 
+#this is implemented according to https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm
+# but seems to be false (there are UMIs that are longer than 10)
 nextseq1k2kschema = {
     "type": "object",
     "required": ["Header", "Reads"],
