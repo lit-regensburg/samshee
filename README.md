@@ -54,6 +54,9 @@ A data section is in CSV format with one header line, i.e. the first line of a d
 A SampleSheetV2 is a SectionedSheet that contains a defined set of sections. Every section that is not a "Header" or a "Reads" section refers to an "application" that may have settings or data sections, or both. The respective sections are named `[<Application>_Settings]` and `[<Application>_Data]`.
 
 ## Reading and writing
+Use the functions `read_sectionedsheet` and `read_samplesheetv2`. Construction from strings is possible, too, use `parse_sectionedsheet` and `parse_samplesheetv2`.
+
+Both SampleSheetV2 as well as SectionedSheet implement `__str__` and can be converted to a string using `str(sheet)`. Usually, the schema is revalidated at this point.
 
 ## Validation
 Admissible values and required fields for the `Header`, `Reads` settings as well as for the `Sequencing` and `BCLConvert` "Applications" are given in the illumina document
