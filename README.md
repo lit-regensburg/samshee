@@ -2,6 +2,37 @@
 
 A schema-agnostic parser for illumina sample sheets v2 and similar documents.
 
+## Examples
+
+### Reading, modifying and writing
+``` python
+from ilsa2.samplesheetv2 import SampleSheetV2, read_samplesheetv2
+sheet = read_samplesheetv2(filename)
+sheet.header['RunName'] = 'a_new_name'
+with open(filename + '.new', "w") as fh:
+    sheet.write(fh)
+```
+
+### Validation: Add validators when constructing the sample sheet:
+``` python
+from ilsa2.samplesheetv2 import SampleSheetV2, read_samplesheetv2
+import ilsa2.validation
+sheet = read_samplesheetv2(filename, validation = [
+ilsa2.validation.illuminasamplesheetv2schema,
+ilsa2.validation.illuminasamplesheetv2logic,
+lambda doc: ilsa2.validation.check_index_distance(doc, 3)
+])
+
+sheet.applications['BCLConvert']['data'][0]['Index'] = 'ACTGACTG'
+sheet.applications['BCLConvert']['data'][1]['Index'] = 'ACTGACTT'
+
+# will fail, because check_index_distance will fail when exporting the sheet:
+with open(filename + '.new', "w") as fh:
+    sheet.write(fh)
+```
+
+Changes that lead to a sample sheet that 
+
 ## SectionedSheet
 A sectioned sheet is a text file that contains one or more ordered sections. Every section starts with a section header, enclosed in square brackets, e.g. `[Reads]`. Any string on the same line after the section header is ignored.
 
@@ -14,11 +45,11 @@ A settings section is a set of key-value pairs, separated by a comma. Additional
 A data section is in CSV format with one header line, i.e. the first line of a data section determines the field names of the objects. Every row in the same section following the header defines one object with the fields given in the header.
 
 ## SampleSheetV2
-A SampleSheetV2 is a SectionedSheet that contains a defined set of sections. Every section that is not a "Header" or a "Reads" section refers to an "application" that may have settings or data sections, or both. The respective sections are named [<Application>_Settings] and [<Application>_Data].
+A SampleSheetV2 is a SectionedSheet that contains a defined set of sections. Every section that is not a "Header" or a "Reads" section refers to an "application" that may have settings or data sections, or both. The respective sections are named `[<Application>_Settings]` and `[<Application>_Data]`.
 
 ## Reading and writing
 
-### Validation
+## Validation
 Admissible values and required fields for the `Header`, `Reads` settings as well as for the `Sequencing` and `BCLConvert` "Applications" are given in the illumina document
 [Sample Sheet v2 Settings](https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm).
 

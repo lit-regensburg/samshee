@@ -1,7 +1,7 @@
 import re
 from collections import OrderedDict
 
-from ilsa2.sectionedsheet import Settings, SectionedSheet
+from ilsa2.sectionedsheet import Settings, SectionedSheet, read_sectionedsheet
 from ilsa2.validation import validate, illuminasamplesheetv2schema, illuminasamplesheetv2logic
 
 class SampleSheetV2:
