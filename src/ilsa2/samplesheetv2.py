@@ -52,5 +52,8 @@ class SampleSheetV2:
     def write(self, filehandle):
         return self.to_sectionedsheet().write(filehandle)
 
+    def to_json(self) -> str:
+        return self.to_sectionedsheet().to_json()
+
 def read_samplesheetv2(fromfile, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]):
     return SampleSheetV2(read_sectionedsheet(fromfile), validation = validation)

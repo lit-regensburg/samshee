@@ -4,6 +4,7 @@ import typing
 import re
 from io import StringIO
 import csv
+import json
 
 """A simple value type."""
 ValueType = typing.NewType('ValueType', typing.Union[str,int,float])
@@ -42,7 +43,7 @@ Section = typing.Union[Settings,Data]
 
 """A ordered dictionary of sections"""
 class SectionedSheet(OrderedDict[str, Section]):
-    def __init__(self, init):
+    def __init__(self, init=OrderedDict()):
         super().__init__(init)
 
     def __str__(self):
@@ -54,6 +55,9 @@ class SectionedSheet(OrderedDict[str, Section]):
 
     def write(self, filehandle):
         filehandle.write(str(self))
+
+    def to_json(self) -> str:
+        return json.dumps(self)
 
 
 
@@ -98,3 +102,11 @@ def read_sectionedsheet(filename: typing.Union[Path,str]) -> SectionedSheet:
     with open(filename, "r") as f:
         return parse_sectionedsheet(f.read())
 
+def parse_from_json_sectionedsheet(jsonstr: str, explicitly_settings_section = ["header", "reads"]) -> SectionedSheet:
+    a = json.loads(jsonstr, object_pairs_hook=OrderedDict)
+    for k in a.keys():
+        if (k.lower() in explicitly_settings_section) or (k.lower().endswith("settings")):
+            a[k] = Settings(a[k])
+        else:
+            a[k] = Data(a[k])
+    return SectionedSheet(a)
