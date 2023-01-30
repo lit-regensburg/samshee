@@ -59,16 +59,18 @@ Use the functions `read_sectionedsheet` and `read_samplesheetv2`. Construction f
 Both SampleSheetV2 as well as SectionedSheet implement `__str__` and can be converted to a string using `str(sheet)`. Usually, the schema is revalidated at this point.
 
 ## Validation
-Admissible values and required fields for the `Header`, `Reads` settings as well as for the `Sequencing` and `BCLConvert` "Applications" are given in the illumina document
-[Sample Sheet v2 Settings](https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm).
+Using `ilsa2.validation.validate`, `SectionedSheet`s can be validated using both json schema definitions and functions that may raise exceptions. The listed validators are processed one-by-one, i.e., if the SectionedSheet passes the first validator, it will be handed on to the next, etc. This means that validators later in the queue may make the assumptions that earlier validators have run successfully.
 
-Generally parsing in this library is agnostic. Input must only adhere to the SectionedSheet spec given above. Further validation can happen by json schema validation or calling a function with the SectionedSheet as an argument, i.e.
+A SampleSheetV2 is constructed from a SectionedSheet that passes a sequence of validation steps. By default these are `illuminasamplesheetv2schema` and `illuminasamplesheetv2logic`. They are highly recommended and meant  enforce illumina specifications so that the sample sheet is accepted by their tools. These validators are based on the [Sample Sheet v2 Settings document](https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm) that provides admissible values and required fields for the `Header`, `Reads` settings as well as for the `Sequencing` and `BCLConvert` "Applications".
+
+Validation of a sample sheet only happens at construction (unless `validators = None` or `[]`), but intentionally not when a sample sheet is manipulated to allow for intermediate states that would not pass validation (e.g. conflicting values for `Reads.Index1` and `BCLConvert.OverrideCycles`). However, by default, validation is performed when the sample sheet is rendered to a string or written out. This ensures that all output adheres to all listed validators.
+
+Further custom validation beyond the illumina spec can happen by json schema validation or calling a function with the SectionedSheet as an argument, i.e.
 
 ``` python
 def my_validator(doc: SectionedSheet) -> None:
     if 'myapp' not in doc:
         raise Exception('sheet does not include settings for myapp.')
-    pass
 ```
 
 This would be equivalent to a json-schema
@@ -80,7 +82,9 @@ This would be equivalent to a json-schema
 }
 ```
 
-By default the only the requirements in the illumina document above are checked. Additional checks on the SectionedSheet can be performed when constructing the SampleSheet, by including any schema or function in the `validation` array (see also the examples at the beginning of this document):
+Much more complicated use cases are possible, enforcing naming conventions on samples, etc.
+
+The following example would guarantee that the sample shield will adhere to illumina standards and to our own defined schema (in this case that it has a section "myapp"):
 
 ``` python
 from ilsa2 import SectionedSheet, SampleSheetV2, read_sectionedsheet
@@ -88,7 +92,8 @@ from ilsa2.validation import illuminasamplesheetv2schema, illuminasamplesheetv2l
 
 def my_validation_function(sectionedsheet : SectionedSheet) -> None:
     # do checks here and raise exceptions.
-    pass
+    if 'myapp' not in doc:
+        raise Exception('sheet does not include settings for myapp.')
     
 my_schema = {} # any json schema
     
@@ -96,18 +101,5 @@ secsheet = read_sectionedsheet(filename)
 samplesheet = SampleSheetV2(secsheet, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic, my_validation_function, my_schema])
 ```
 
-Schemata must adhere to the [json-schema spec](https://json-schema.org/draft/2020-12/json-schema-validation.html), functions may perform any operations and are expected to raise exceptions if a SectionedSchema is invalid. Validation happens in the order given in the list, so any schema or validation function that comes after another can assume that the objects validates successfully against the former (e.g. that every SectionedSheet in the example above is a valid illumina SampleSheet v2). This can be used to implement own conventions, naming schemes, etc.
-
-Example: Checking for a minimal distance between indices can be done using the `check_index_distance` in `ilsa2.validation`:
-
-``` python
-from ilsa2.validation import illuminasamplesheetv2schema, illuminasamplesheetv2logic, nextseq1k2kschema, check_index_distance
-samplesheet = SampleSheetV2(secsheet, validation = [
-    illuminasamplesheetv2schema, 
-    illuminasamplesheetv2logic, 
-    lambda doc : check_index_distance(doc, 3)
-    ])
-```
-
-This will check if the document is a illumina sample sheet v2 **and** if the indices have a minimal index distance of 3.
+Json schemata must follow the [json-schema spec](https://json-schema.org/draft/2020-12/json-schema-validation.html), functions may perform any operations and are expected to raise exceptions if a SectionedSheet is invalid.
 
