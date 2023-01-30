@@ -1,6 +1,12 @@
 # IlSa2
 
-A schema-agnostic parser for illumina sample sheets v2 and similar documents.
+A schema-agnostic parser and writer for illumina sample sheets v2 and similar documents.
+
+## Features
+
+- parsing and writing illumina Sample Sheet v2 files.
+- encoding to and parsing from json
+- customizable validation, including a default validation scheme that follows illumina specs
 
 ## Examples
 
