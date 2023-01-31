@@ -272,7 +272,10 @@ def check_index_distance(doc: SectionedSheet, mindist = 3):
         return sum([shorter[i] != longer[i] for i in range(len(shorter))])
 
     def minimal_index_distance(indices):
-        return min([pairwise_index_distance(p[0], p[1]) for p in itertools.combinations(indices, 2)])
+        return min(
+            [(pairwise_index_distance(p[0], p[1]), p[0], p[1]) for p in itertools.combinations(indices, 2)],
+            key = lambda tup : tup[0]
+        )
 
     index1 = [i['Index'] for i in doc['BCLConvert_Data']]
     if 'Index2' in doc['BCLConvert_Data'][0]:
@@ -280,8 +283,9 @@ def check_index_distance(doc: SectionedSheet, mindist = 3):
         index = [i1+i2 for i1, i2 in zip(index1, index2)]
     else:
         index = index1
-    if minimal_index_distance(index) < mindist:
-        raise Exception(f"Minimal index distance is {minimal_index_distance(index)} which is less than the expected minimal index distance of {mindist}")
+    minindexdist = minimal_index_distance(index)
+    if minindexdist[0] < mindist:
+        raise Exception(f"Minimal index distance is {minindexdist[0]} between the indices {minindexdist[1]} and {minindexdist[2]} which is less than the expected minimal index distance of {mindist}")
 
 
 #this is implemented according to https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm
