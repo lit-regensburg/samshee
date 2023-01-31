@@ -75,7 +75,6 @@ def parse_value(contents: str) -> ValueType:
 def parse_settings(contents: str) -> Settings:
     res = Settings()
     for i, line in enumerate(contents.split("\n")):
-        print(f"line: {line.rstrip(',')}")
         unpacked = line.rstrip(",").split(",")
         # test if the key is meaningful, i.e. not from an empty line
         # the latter can happen in quoted sheets, where this corresponds to the last " before the next section
