@@ -70,21 +70,29 @@ def parse_value(contents: str) -> ValueType:
         return float(contents)
     except:
         pass
-    return contents
+    return contents.replace("\"", "")
 
 def parse_settings(contents: str) -> Settings:
     res = Settings()
-    for line in contents.split("\n"):
-        (key, value) = line.rstrip(",").split(",")
-        #try:
-        res[key] = parse_value(value)
-        #except ValueError as exc:
-        #    raise InvalidValueType(exc)
+    for i, line in enumerate(contents.split("\n")):
+        print(f"line: {line.rstrip(',')}")
+        unpacked = line.rstrip(",").split(",")
+        # test if the key is meaningful, i.e. not from an empty line
+        # the latter can happen in quoted sheets, where this corresponds to the last " before the next section
+        if len(unpacked[0]) == 0 or unpacked[0] == "\"":
+            continue
+        elif len(unpacked) != 2:
+            raise Exception(f"Malformed line #{i} {line}")
+        key = unpacked[0].replace("\"", "")
+        value = unpacked[1] # quoting in values is okay and prevents parsing as int / float
+        res[key.replace("\"", "")] = parse_value(value)
     return res
 
 
 def parse_data(contents: str) -> Data:
-    return Data([row for row in csv.DictReader(StringIO(contents), delimiter=",", quotechar="\"")])
+    reader = csv.DictReader(StringIO(contents), delimiter=",", quotechar="\"")
+    # skip empty rows
+    return [row for row in reader if not all([row[i] is None or len(row[i])== 0 for i in row.keys()])]
 
 
 def parse_sectionedsheet(contents: str, explicitly_settings_section = ["header", "reads"]) -> SectionedSheet:
