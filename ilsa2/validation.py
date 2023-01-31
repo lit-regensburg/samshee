@@ -362,4 +362,4 @@ def validate(doc: SectionedSheet, validation):
             try:
                 schema(doc)
             except Exception as exc:
-                raise Exception(f"{name} raised validation error: f{exc}")
+                raise Exception(f"{name} raised validation error: {exc}")
