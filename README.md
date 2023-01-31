@@ -6,7 +6,7 @@ A schema-agnostic parser and writer for illumina sample sheets v2 and similar do
 
 - parsing and writing illumina Sample Sheet v2 files.
 - encoding to and parsing from json
-- customizable validation, including a default validation scheme that follows illumina specs
+- customizable validation, ships with a default validation schema that follows illumina specs
 
 ## Examples
 
