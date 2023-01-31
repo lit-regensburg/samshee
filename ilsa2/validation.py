@@ -1,4 +1,5 @@
-from jsonschema import validate as schemaval
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import best_match, ErrorTree
 import itertools
 import re
 import types
@@ -12,6 +13,7 @@ from ilsa2.sectionedsheet import SectionedSheet
 # https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm
 # (which is not a proper spec, but reasonably close to it and this is my interpretation)
 illuminasamplesheetv2schema = {
+    "title": "illumina SampleSheetv2 schema spec",
     "type": "object",
     "required": ["Header", "Reads", "Sequencing_Settings"],
     "properties": {
@@ -334,9 +336,30 @@ def validate(doc: SectionedSheet, validation):
         pass
     else:
         validation = [validation]
+    for i, schema in enumerate(validation):
+        if not ((type(schema) == dict) or callable(schema)):
+            if hasattr(schema, 'name'):
+                raise Exception(f"validator / schema {schema.name} (#{i}) is not a schema or is not callable.")
+            else:
+                raise Exception(f"anonymous validator / schema #{i} is not a schema or is not callable.")
 
-    for schema in validation:
+    for i, schema in enumerate(validation):
         if(type(schema) == dict):
-            schemaval(instance=doc, schema=schema)
+            name = f"anonymous validator #{i}"
+            if 'title' in schema:
+                name = schema['title']
+            v = Draft202012Validator(schema).iter_errors(doc)
+            errs = []
+            for err in v:
+                errs.append((err.json_path, err.message))
+            if len(errs) == 1:
+                raise Exception(f"{name} raised validation error: {errs[0][0]}: {errs[0][1]}")
+            elif len(errs) > 1:
+                msg = "\n".join(["- "+e[0]+": "+e[1] for e in errs])
+                raise Exception(f"{name} raised validation errors:\n{msg}")
         elif(type(schema) == types.FunctionType):
-            schema(doc)
+            name = f"anonymous validation function #{i}"
+            try:
+                schema(doc)
+            except Exception as exc:
+                raise Exception(f"{name} raised validation error: f{exc}")
