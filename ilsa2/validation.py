@@ -15,7 +15,7 @@ from ilsa2.sectionedsheet import SectionedSheet
 illuminasamplesheetv2schema = {
     "title": "illumina SampleSheetv2 schema spec",
     "type": "object",
-    "required": ["Header", "Reads", "Sequencing_Settings"],
+    "required": ["Header", "Reads"],
     "properties": {
         "Header": {
             "type": "object",
