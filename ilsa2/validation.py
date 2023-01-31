@@ -222,12 +222,12 @@ def illuminasamplesheetv2logic(doc : SectionedSheet):
                 if elemname not in cycles.keys():
                     raise Exception(f"Reads defines {elemname}, but BCLConvert_Settings.OverrideCycles is incompatible with it.")
         if 'AdapterRead1' in doc['BCLConvert_Settings']:
-            if len(doc['BCLConvert_Settings']['AdapterRead1']) > len(doc['Reads']['Read1Cycles']):
+            if len(doc['BCLConvert_Settings']['AdapterRead1']) > doc['Reads']['Read1Cycles']:
                 raise Exception(f"BCLConvert_Settings.AdapterRead1 is longer then Reads.Read1Cycles")
         if 'AdapterRead2' in doc['BCLConvert_Settings']:
             if 'Read2Cycles' not in doc['Reads']:
                 raise Exception('AdapterRead2 defined in BCLConvert_Settings, but no Read2Cycles entry in Reads')
-            if len(doc['BCLConvert_Settings']['AdapterRead2']) > len(doc['Reads']['Read2Cycles']):
+            if len(doc['BCLConvert_Settings']['AdapterRead2']) > doc['Reads']['Read2Cycles']:
                 raise Exception("BCLConvert_Settings.AdapterRead2 is longer then Reads.Read2Cycles")
         # The "spec" says: "Only required if Index1Cycles is specified." but this conflicts with an default value of 1
         # so I assume it must be the other way around: if there are Mismatches defined, then this must also be in the Reads section
