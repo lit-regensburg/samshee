@@ -229,14 +229,9 @@ def illuminasamplesheetv2logic(doc : SectionedSheet):
                 raise Exception('AdapterRead2 defined in BCLConvert_Settings, but no Read2Cycles entry in Reads')
             if len(doc['BCLConvert_Settings']['AdapterRead2']) > doc['Reads']['Read2Cycles']:
                 raise Exception("BCLConvert_Settings.AdapterRead2 is longer then Reads.Read2Cycles")
-        # The "spec" says: "Only required if Index1Cycles is specified." but this conflicts with an default value of 1
-        # so I assume it must be the other way around: if there are Mismatches defined, then this must also be in the Reads section
-        if 'BarcodeMismatchesIndex1' in doc['BCLConvert_Settings']:
-            if 'Index1Cycles' not in doc['Reads']:
-                raise Exception("BCLConvert_Settings defines BarcodeMismatches1, but no Index1Cycles defined in Reads.")
-        if 'BarcodeMismatchesIndex2' in doc['BCLConvert_Settings']:
-            if 'Index2Cycles' not in doc['Reads']:
-                raise Exception("BCLConvert_Settings defines BarcodeMismatches2, but no Index2Cycles defined in Reads.")
+        # The "spec" also says:
+        # "BarcodeMismatchesIndex[12]: Only required if Index[12]Cycles is specified."
+        # but this conflicts with a default value of 1.
     if 'BCLConvert_Data' in doc:
         # Sample_ID do not need to be unique?!
         if( len(doc['BCLConvert_Data']) > 1 ):
@@ -328,8 +323,6 @@ def nextseq1k2klogic(doc: SectionedSheet):
 
 def validate(doc: SectionedSheet, validation):
     # TODO validation may also contain schema URLs
-    # TODO use smarter error handling and return lists of errors.
-    # see https://python-jsonschema.readthedocs.io/en/stable/errors/
     if validation is None:
         schemata = []
     elif type(validation) == list:
