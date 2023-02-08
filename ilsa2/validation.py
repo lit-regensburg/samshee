@@ -210,6 +210,7 @@ def illuminasamplesheetv2logic(doc : SectionedSheet):
 
     We won't check at the level of the index kits (i.e. that the indices match the kit etc)
     """
+    cycles = None
     if 'BCLConvert_Settings' in doc:
         if 'OverrideCycles' in doc['BCLConvert_Settings']:
             cycles = parse_overrideCycles(doc['BCLConvert_Settings']['OverrideCycles'])
@@ -218,9 +219,13 @@ def illuminasamplesheetv2logic(doc : SectionedSheet):
                     raise Exception(f"BCLConvert_Settings.OverrideCycles defines {elemname}, but it is not specified in the Reads section")
                 if doc['Reads'][elemname] != len(elemseq):
                     raise Exception(f"Reads.{elemname} is {doc['Reads'][elemname]}, but BCLConvert_Settings.OverrideCycles specifies a length of {len(elemseq)}")
-            for elemname in [i for i in ['Read1Cycles', 'Read2Cycles', 'Index1Cycles', 'Index2Cycles'] if i in doc.keys()]:
+            for elemname in [i for i in ['Read1Cycles', 'Read2Cycles', 'Index1Cycles', 'Index2Cycles'] if i in doc['Reads'].keys()]:
                 if elemname not in cycles.keys():
-                    raise Exception(f"Reads defines {elemname}, but BCLConvert_Settings.OverrideCycles is incompatible with it.")
+                    raise Exception(f"Reads defines {elemname}, but BCLConvert_Settings.OverrideCycles {doc['BCLConvert_Settings']['OverrideCycles']} is incompatible with it.")
+        else:
+            # generate dummy overrideCycles structure
+            cycles = {k : 'Y' * v if k.startswith('Read') else 'I' * v for k,v in doc['Reads'].items()}
+
         if 'AdapterRead1' in doc['BCLConvert_Settings']:
             if len(doc['BCLConvert_Settings']['AdapterRead1']) > doc['Reads']['Read1Cycles']:
                 raise Exception(f"BCLConvert_Settings.AdapterRead1 is longer then Reads.Read1Cycles")
@@ -238,9 +243,18 @@ def illuminasamplesheetv2logic(doc : SectionedSheet):
             if 'Index' not in doc['BCLConvert_Data'][0]:
                 raise Exception("No Index found in BCLConvert_Data, although it contains more than one sample")
             index1 = [i['Index'] for i in doc['BCLConvert_Data']]
+            minindex1length = cycles['Index1Cycles'].count("I")
+            maxindex1length = len(cycles['Index1Cycles'])
+            if not all([(len(index) >= minindex1length and len(index) <= maxindex1length) for index in index1]):
+                raise Exception(f"(At least some) First indices of the samples have a different length than what is specified in OverrideCycles ({index1length})")
+
             if 'Index2' in doc['BCLConvert_Data'][0]:
                 index2 = [i['Index2'] for i in doc['BCLConvert_Data']]
                 index = [i1+i2 for i1, i2 in zip(index1, index2)]
+                minindex2length = cycles['Index2Cycles'].count("I")
+                maxindex2length = len(cycles['Index1Cycles'])
+                if not all([(len(index) >= minindex2length and len(index) <= maxindex2length) for index in index2]):
+                    raise Exception(f"(At least some) Second indices of the samples have a different length than what is specified in OverrideCycles ({index2length})")
             else:
                 index = index1
             if len(set(index)) != len(index):
@@ -256,7 +270,16 @@ def basespacelogic(doc: SectionedSheet):
     for convert_id in bclconvert_sample_ids:
         if convert_id not in cloud_sample_ids:
             raise Exception(f"Sample_ID {convert_id} is defined in the BCLConvert_Data section, but not in the Cloud_Data section.")
-    # should we test also for the reverse?
+    # TODO should we test also for the reverse? I.e. is it allowed that there are samples defined in Cloud_Data that are not in BCLConvert_Data
+    # currently we allow for that.
+    cloudsamples = {x['Sample_ID']: x for x in doc['Cloud_Data']}
+    convertsamples = {x['Sample_ID']: x for x in doc['BCLConvert_Data']}
+    commonkeys = list(set(cloudsamples.keys()).intersection(set(convertsamples)))
+    for sampleid in commonkeys:
+        for index in ['Index', 'Index2']:
+            if index in cloudsamples[sampleid] and index in convertsamples[sampleid]:
+                if cloudsamples[sampleid][index] != convertsamples[sampleid][index]:
+                    raise Exception(f"Index of {sampleid} does not match between Cloud_Data ({cloudsamples[sampleid][index]}) and BCLConvert_Data ({convertsamples[sampleid][index]}) ")
 
 
 def check_index_distance(doc: SectionedSheet, mindist = 3):
@@ -265,7 +288,7 @@ def check_index_distance(doc: SectionedSheet, mindist = 3):
             if the two sequences have different lengths, only the left-most digits are compared.
         """
         shorter = a if len(a) < len(b) else b
-        longer = a if len(a) <= len(b) else b
+        longer  = a if len(a) >= len(b) else b
         if len(shorter) < len(longer):
             # fill the remaining space with the longer sequence so that it does not add to the distance
             shorter = shorter + longer[-(len(longer)-len(shorter)):]
@@ -277,9 +300,9 @@ def check_index_distance(doc: SectionedSheet, mindist = 3):
             key = lambda tup : tup[0]
         )
 
-    index1 = [i['Index'] for i in doc['BCLConvert_Data']]
+    index1 = [i['Index'] if i['Index'] is not None else "" for i in doc['BCLConvert_Data']]
     if 'Index2' in doc['BCLConvert_Data'][0]:
-        index2 = [i['Index2'] for i in doc['BCLConvert_Data']]
+        index2 = [i['Index2'] if i['Index2'] is not None else ""  for i in doc['BCLConvert_Data']]
         index = [i1+i2 for i1, i2 in zip(index1, index2)]
     else:
         index = index1
