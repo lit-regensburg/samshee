@@ -32,6 +32,9 @@ class Data(list[dict]):
            return ""
        res = StringIO("")
        fieldnames = self[0].keys()
+       # TODO may specify a dialect.
+       # currently, we have \r\n as lineterminator
+       # this conflicts with terminators in other sections.
        writer = csv.DictWriter(res, delimiter=",", fieldnames = fieldnames)
        writer.writeheader()
        for row in self:
@@ -109,7 +112,7 @@ def read_sectionedsheet(filename: typing.Union[Path,str]) -> SectionedSheet:
     with open(filename, "r") as f:
         return parse_sectionedsheet(f.read())
 
-def parse_from_json_sectionedsheet(jsonstr: str, explicitly_settings_section = ["header", "reads"]) -> SectionedSheet:
+def parse_sectionedsheet_from_json(jsonstr: str, explicitly_settings_section = ["header", "reads"]) -> SectionedSheet:
     a = json.loads(jsonstr, object_pairs_hook=OrderedDict)
     for k in a.keys():
         if (k.lower() in explicitly_settings_section) or (k.lower().endswith("settings")):
@@ -117,3 +120,6 @@ def parse_from_json_sectionedsheet(jsonstr: str, explicitly_settings_section = [
         else:
             a[k] = Data(a[k])
     return SectionedSheet(a)
+
+def parse_sectionedsheet_from_object(obj, explicitly_settings_section = ["header", "reads"]) -> SectionedSheet:
+    return parse_sectionedsheet_from_json(json.dumps(obj), explicitly_settings_section)

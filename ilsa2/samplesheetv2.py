@@ -1,11 +1,14 @@
 import re
+import json
 from collections import OrderedDict
 
-from ilsa2.sectionedsheet import Settings, SectionedSheet, read_sectionedsheet
+from ilsa2.sectionedsheet import Settings, SectionedSheet, read_sectionedsheet, parse_sectionedsheet_from_json
 from ilsa2.validation import validate, illuminasamplesheetv2schema, illuminasamplesheetv2logic
 
 class SampleSheetV2:
+    """A class that represents an illumina Sample Sheet v2."""
     def __init__(self, secsheet: SectionedSheet = None, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]):
+        """Parsing from """
         validate(secsheet, validation)
         self.validation = validation
         def secname(k):
@@ -57,3 +60,9 @@ class SampleSheetV2:
 
 def read_samplesheetv2(fromfile, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]):
     return SampleSheetV2(read_sectionedsheet(fromfile), validation = validation)
+
+def parse_samplesheetv2_from_json(jsonstr : str, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]) -> SampleSheetV2:
+    return SampleSheetV2(parse_sectionedsheet_from_json(jsonstr), validation)
+
+def parse_samplesheetv2_from_object(obj, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]) -> SampleSheetV2:
+    return parse_samplesheetv2_from_json(json.dumps(obj))
