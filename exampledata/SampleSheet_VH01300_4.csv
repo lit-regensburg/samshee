@@ -1,0 +1,36 @@
+[Header],
+FileFormatVersion,2
+RunName,p115_p138
+RunDescription,This is my run description
+InstrumentPlatform,NextSeq1k2k
+IndexOrientation,Forward
+
+[Reads]
+Read1Cycles,76
+Read2Cycles,76
+Index1Cycles,10
+Index2Cycles,10
+
+[Sequencing_Settings]
+InputContainerIdentifier,This is the optional Library Tube ID lane
+LibraryPrepKits,ILMNStrandedmRNA
+
+[BCLConvert_Settings]
+SoftwareVersion,3.8.4
+AdapterRead1,CTGTCTCTTATACACATCT
+AdapterRead2,CTGTCTCTTATACACATCT
+FastqCompressionFormat,gzip
+
+[BCLConvert_Data]
+Sample_ID,Index,Index2
+Test1,GAACTGAGCG,TCGTGGAGCG
+Test2,AGGTCAGATA,CTACAAGATA
+
+[Cloud_Settings]
+GeneratedVersion,1.5.0.202212112316
+
+[Cloud_Data]
+Sample_ID,ProjectName,LibraryName,LibraryPrepKitName,IndexAdapterKitName
+Test1,p115_p138_2023-01-20T16_19_31_1acb890,Test1_GAACTGAGCG_TCGTGGAGCG,ILMNStrandedmRNA,IDTIlmnNRNAUDISetALigation
+Test2,p115_p138_2023-01-20T16_19_31_1acb890,Test2_AGGTCAGATA_CTACAAGATA,ILMNStrandedmRNA,IDTIlmnNRNAUDISetALigation
+
