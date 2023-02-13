@@ -4,7 +4,7 @@ import itertools
 import re
 import types
 
-from ilsa2.sectionedsheet import SectionedSheet
+from samshee.sectionedsheet import SectionedSheet
 
 #
 # a schema that validates a sectioned sheet to be a samplesheet

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "samshee"
+version = "0.0.6"
+authors = [
+  { name="Jakob Simeth", email="jakob.simeth@ukr.de" }
+]
+description="A schema-agnostic parser and writer for illumina sample sheets v2."
+readme = "README.md"
+license={file = "LICENSE"}
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Development Status :: 2 - Pre-Alpha",
+]
+dependencies = [
+    "jsonschema>=4.17"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/lit-regensburg/samshee"
+"Bug Tracker" = "https://github.com/lit-regensburg/samshee/-/issues"

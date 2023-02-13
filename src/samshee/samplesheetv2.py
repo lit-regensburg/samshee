@@ -2,8 +2,8 @@ import re
 import json
 from collections import OrderedDict
 
-from ilsa2.sectionedsheet import Settings, SectionedSheet, read_sectionedsheet, parse_sectionedsheet_from_json
-from ilsa2.validation import validate, illuminasamplesheetv2schema, illuminasamplesheetv2logic
+from samshee.sectionedsheet import Settings, SectionedSheet, read_sectionedsheet, parse_sectionedsheet_from_json
+from samshee.validation import validate, illuminasamplesheetv2schema, illuminasamplesheetv2logic
 
 class SampleSheetV2:
     """A class that represents an illumina Sample Sheet v2."""
