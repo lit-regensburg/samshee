@@ -94,7 +94,7 @@ def parse_settings(contents: str) -> Settings:
 def parse_data(contents: str) -> Data:
     reader = csv.DictReader(StringIO(contents), delimiter=",", quotechar="\"")
     # skip empty rows
-    return [row for row in reader if not all([row[i] is None or len(row[i])== 0 for i in row.keys()])]
+    return Data([row for row in reader if not all([row[i] is None or len(row[i])== 0 for i in row.keys()])])
 
 
 def parse_sectionedsheet(contents: str, explicitly_settings_section = ["header", "reads"]) -> SectionedSheet:
