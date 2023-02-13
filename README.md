@@ -6,7 +6,7 @@ A schema-agnostic parser and writer for illumina® sample sheets v2 and similar 
 
 - parsing and writing illumina® Sample Sheet v2 files.
 - encoding to and parsing from json
-- customizable validation, ships with a default validation schem that follows illumina® specs
+- customizable validation, ships with a default validation schema that follows illumina® specs
 
 ## Examples
 
@@ -42,7 +42,7 @@ with open(filename + '.new', "w") as fh:
 This will give
 
 ``` 
-Exception: Minimal index distance is 1 which is less than the expected minimal index distance of 3
+Exception: anonymous validation function #2 raised validation error: Minimal index distance is 1 between the indices ACTGACTG and ACTGACTT which is less than the expected minimal index distance of 3
 ```
 
 The first two validators (`illuminasamplesheetv2schema` and `illuminasamplesheetv2logic`) are highly recommended and are meant to enforce illumina® specifications so that the sample sheet is accepted by their tools.
