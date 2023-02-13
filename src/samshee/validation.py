@@ -8,7 +8,6 @@ from samshee.sectionedsheet import SectionedSheet
 
 #
 # a schema that validates a sectioned sheet to be a samplesheet
-# we will put this elsewhere, but for now this is the place:
 # this follows
 # https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm
 # (which is not a proper spec, but reasonably close to it and this is my interpretation)
@@ -159,7 +158,28 @@ illuminasamplesheetv2schema = {
         }
     }
 }
-def parse_overrideCycles(cyclestr : str) -> dict:
+
+def parse_overrideCycles(cyclestr : str) -> dict[str,str]:
+    """validates and expands strings typically found in OverrideCycles into a dict with keys that correspond to the respective entry,
+    For example Y53;I8;N8U16;Y53 will be parsed into
+    ```
+    {
+      'Read1Cycles': 'YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY',
+      'Index1Cycles': 'IIIIIIII',
+      'Index2Cycles': 'NNNNNNNNUUUUUUUUUUUUUUUU',
+      'Read2Cycles': 'YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY'
+    }
+    ```
+    This structure is easily processable, e.g. to get the total cycle length
+    ```
+    sum([len(v) for v in parse_overrideCycles("Y53;I8;N8U16;Y53").values()])
+    ```
+    or to compare lengths with the corresponding Reads entries:
+    ```
+    ovrCycles = parse_overrideCycles("Y53;I8;N8U16;Y53")
+    all([len(ovrCycles[k]) == v for k,v in secsheet['Reads'].items()])
+    ```
+    """
     def expand(short: str) -> str:
         res = ""
         pt = re.compile("([NYIU]+)([0-9]*);?")
@@ -203,7 +223,7 @@ def parse_overrideCycles(cyclestr : str) -> dict:
     return res
 
 
-def illuminasamplesheetv2logic(doc : SectionedSheet):
+def illuminasamplesheetv2logic(doc : SectionedSheet) -> None:
     """
     this function checks the logic that is described in
     https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm
@@ -260,7 +280,7 @@ def illuminasamplesheetv2logic(doc : SectionedSheet):
             if len(set(index)) != len(index):
                 raise Exception("Indices are not unique.")
 
-def basespacelogic(doc: SectionedSheet):
+def basespacelogic(doc: SectionedSheet) -> None:
     if 'Cloud_Data' not in doc:
         raise Exception("no Cloud_Data section")
     if 'BCLConvert_Data' not in doc:
@@ -282,7 +302,8 @@ def basespacelogic(doc: SectionedSheet):
                     raise Exception(f"Index of {sampleid} does not match between Cloud_Data ({cloudsamples[sampleid][index]}) and BCLConvert_Data ({convertsamples[sampleid][index]}) ")
 
 
-def check_index_distance(doc: SectionedSheet, mindist = 3):
+def check_index_distance(doc: SectionedSheet, mindist = 3) -> None:
+    """checks the pairwise distance between indices to be smaller than or equal to mindist"""
     def pairwise_index_distance(a, b):
         """ returns the number of unequal digits between the two sequences.
             if the two sequences have different lengths, only the left-most digits are compared.
@@ -337,7 +358,7 @@ nextseq1k2kschema = {
     }
 }
 
-def nextseq1k2klogic(doc: SectionedSheet):
+def nextseq1k2klogic(doc: SectionedSheet) -> None:
     if 'BCLConvert_Settings' in doc:
         if 'OverrideCycles' in doc['BCLConvert_Settings']:
             cycles = parse_overrideCycles(doc['BCLConvert_Settings']['OverrideCycles'])
@@ -348,7 +369,7 @@ def nextseq1k2klogic(doc: SectionedSheet):
 
 
 
-def validate(doc: SectionedSheet, validation):
+def validate(doc: SectionedSheet, validation) -> None:
     # TODO validation may also contain schema URLs
     if validation is None:
         schemata = []

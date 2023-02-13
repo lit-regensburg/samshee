@@ -6,7 +6,9 @@ from samshee.sectionedsheet import Settings, SectionedSheet, read_sectionedsheet
 from samshee.validation import validate, illuminasamplesheetv2schema, illuminasamplesheetv2logic
 
 class SampleSheetV2:
-    """A class that represents an illumina Sample Sheet v2."""
+    """A class that represents an illumina Sample Sheet v2.
+    This is always constructed from a SectionedSheet that typically has been validated against a set of rules.
+    """
     def __init__(self, secsheet: SectionedSheet = None, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]):
         """Parsing from """
         validate(secsheet, validation)
@@ -34,7 +36,8 @@ class SampleSheetV2:
             elif key == 'Reads':
                 self.reads = secsheet['Reads']
 
-    def to_sectionedsheet(self, validate_schema = True):
+    def to_sectionedsheet(self, validate_schema = True) -> SectionedSheet:
+        """Constructs a SectionedSheet, unless validate_schema is False, the sheet is revalidated"""
         res = SectionedSheet(OrderedDict())
         if 'header' in self.__dict__.keys():
             res['Header'] = self.header
@@ -49,20 +52,25 @@ class SampleSheetV2:
             validate(res, self.validation)
         return res
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """returns a string representation of the sample sheet (adheres to the usual sample sheet format)"""
         return(str(self.to_sectionedsheet()))
 
-    def write(self, filehandle):
+    def write(self, filehandle) -> None:
+        """writes a string representation of the sample sheet (adheres to the usual sample sheet format) to a file"""
         return self.to_sectionedsheet().write(filehandle)
 
     def to_json(self) -> str:
         return self.to_sectionedsheet().to_json()
 
-def read_samplesheetv2(fromfile, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]):
+def read_samplesheetv2(fromfile, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]) -> SampleSheetV2:
+    """reads a SampleSheetv2 from a file by first parsing it as a SectionedSheet and then validating it against the standard schemata"""
     return SampleSheetV2(read_sectionedsheet(fromfile), validation = validation)
 
 def parse_samplesheetv2_from_json(jsonstr : str, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]) -> SampleSheetV2:
+    """parses a SampleSheetv2 from a json string by first parsing it as a SectionedSheet and then validating it against the standard schemata"""
     return SampleSheetV2(parse_sectionedsheet_from_json(jsonstr), validation)
 
 def parse_samplesheetv2_from_object(obj, validation = [illuminasamplesheetv2schema, illuminasamplesheetv2logic]) -> SampleSheetV2:
+    """constructs a SampleSheetv2 from a object (dict) by first constructing a SectionedSheet from it and then validating it against the standard schemata"""
     return parse_samplesheetv2_from_json(json.dumps(obj))
