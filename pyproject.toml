@@ -27,4 +27,4 @@ dependencies = [
 
 [project.urls]
 "Homepage" = "https://github.com/lit-regensburg/samshee"
-"Bug Tracker" = "https://github.com/lit-regensburg/samshee/-/issues"
+"Bug Tracker" = "https://github.com/lit-regensburg/samshee/issues"
