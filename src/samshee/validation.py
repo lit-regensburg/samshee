@@ -316,6 +316,10 @@ def check_index_distance(doc: SectionedSheet, mindist = 3) -> None:
         return sum([shorter[i] != longer[i] for i in range(len(shorter))])
 
     def minimal_index_distance(indices):
+        if len(indices) == 1:
+            return len(indices[0])
+        elif len(indices) == 0:
+            raise Exception("no indices.")
         return min(
             [(pairwise_index_distance(p[0], p[1]), p[0], p[1]) for p in itertools.combinations(indices, 2)],
             key = lambda tup : tup[0]
@@ -327,6 +331,8 @@ def check_index_distance(doc: SectionedSheet, mindist = 3) -> None:
         index = [i1+i2 for i1, i2 in zip(index1, index2)]
     else:
         index = index1
+    if len(index) == 0:
+        return
     minindexdist = minimal_index_distance(index)
     if minindexdist[0] < mindist:
         raise Exception(f"Minimal index distance is {minindexdist[0]} between the indices {minindexdist[1]} and {minindexdist[2]} which is less than the expected minimal index distance of {mindist}")
