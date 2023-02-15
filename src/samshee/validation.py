@@ -244,9 +244,9 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
     cycles: dict[str, str] = {}
     if "BCLConvert_Settings" in doc:
         convertsettings = cast(Settings, doc["BCLConvert_Settings"])
+        readsettings = cast(Settings, doc["Reads"])
         if "OverrideCycles" in convertsettings:
             cycles = parse_overrideCycles(str(convertsettings["OverrideCycles"]))
-            readsettings = cast(Settings, doc["Reads"])
             for elemname, elemseq in cycles.items():
                 if elemname not in doc["Reads"]:
                     raise Exception(
