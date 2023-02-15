@@ -1,6 +1,6 @@
 import itertools
 import re
-from typing import Callable, cast, Mapping
+from typing import Callable, cast, Mapping, Tuple
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ErrorTree, best_match
@@ -363,14 +363,17 @@ def basespacelogic(doc: SectionedSheet) -> None:
                     )
 
 
-def check_index_distance(doc: SectionedSheet, mindist=3) -> None:
-    """checks the pairwise distance between indices to be smaller than or equal to mindist
-    if doc contains BCLConvert.Settings.BarcodeMismatchesIndex[12], this mindist is ignored and this is used instead
+def check_index_distance(doc: SectionedSheet, mindist: int = 3) -> None:
+    """checks the pairwise distance (Hamming distance) between indices to be smaller than or equal to mindist
+    if doc contains BCLConvert.Settings.BarcodeMismatchesIndex[12], mindist is ignored and this is used instead
     TODO this requires some changes. BarcodeMismatches means something different...
     """
 
-    def pairwise_index_distance(a, b):
-        """returns the number of unequal digits between the two sequences.
+    if mindist < 1:
+        raise ValueError("minimal index distance must be >= 1.")
+
+    def pairwise_index_distance(a: str, b: str) -> int:
+        """returns the number of unequal digits (Hamming distance) between the two sequences.
         if the two sequences have different lengths, only the left-most digits are compared.
         """
         shorter = a if len(a) < len(b) else b
@@ -380,9 +383,10 @@ def check_index_distance(doc: SectionedSheet, mindist=3) -> None:
             shorter = shorter + longer[-(len(longer) - len(shorter)) :]
         return sum([shorter[i] != longer[i] for i in range(len(shorter))])
 
-    def minimal_index_distance(indices):
+    def minimal_index_distance(indices: list[str]) -> Tuple[int, str, str]:
+        """returns the minimal distance and the two indices that are closest"""
         if len(indices) == 1:
-            return len(indices[0])
+            return (len(indices[0]), indices[0], indices[0])
         elif len(indices) == 0:
             raise Exception("no indices.")
         return min(
@@ -393,29 +397,49 @@ def check_index_distance(doc: SectionedSheet, mindist=3) -> None:
             key=lambda tup: tup[0],
         )
 
-    index1 = [
-        i["Index"] if i["Index"] is not None else ""
-        for i in cast(Data, doc["BCLConvert_Data"])
-    ]
-    if "BarcodeMismatchesIndex1" in doc["BCLConvert_Settings"]:
-        mismatches1 = cast(Settings, doc["BCLConvert_Settings"])[
-            "BarcodeMismatchesIndex1"
-        ]
-    if "Index2" in cast(Data, doc["BCLConvert_Data"])[0]:
-        index2 = [
-            i["Index2"] if i["Index2"] is not None else ""
+    def check_index(
+        doc: SectionedSheet,
+        indexname: str,
+        mismatchname: str,
+        mindist: int,
+        allow_equal: bool = False,
+    ) -> bool:
+        """returns True if all indices are equal"""
+        index = [
+            i[indexname] if indexname in i and i[indexname] is not None else ""
             for i in cast(Data, doc["BCLConvert_Data"])
         ]
-        index = [i1 + i2 for i1, i2 in zip(index1, index2)]
-    else:
-        index = index1
-    if len(index) == 0:
-        return
-    minindexdist = minimal_index_distance(index)
-    if minindexdist[0] < mindist:
-        raise Exception(
-            f"Minimal index distance is {minindexdist[0]} between the indices {minindexdist[1]} and {minindexdist[2]} which is less than the expected minimal index distance of {mindist}"
+        mismatches = (
+            cast(Settings, doc["BCLConvert_Settings"])[mismatchname]
+            if mismatchname in doc["BCLConvert_Settings"]
+            else mindist - 1  # mindist is exclusive (the smallest allowed value)
         )
+
+        if len(set(index)) == 1 and allow_equal:
+            # index is uniform
+            return True
+
+        mindist = minimal_index_distance(index)
+        if mindist[0] <= mismatches:
+            raise Exception(
+                f"{indexname} is too similar. Computed distance is {mindist[0]} between indices {mindist[1]} and {mindist[2]}, while at most {mismatches} is allowed."
+            )
+        return False
+
+    convdata = cast(Data, doc["BCLConvert_Data"])
+    if "Index" in convdata[0] and "Index2" in convdata[0]:
+        uniform1 = check_index(
+            doc, "Index", "BarcodeMismatchesIndex1", mindist, allow_equal=True
+        )
+        uniform2 = check_index(
+            doc, "Index2", "BarcodeMismatchesIndex2", mindist, allow_equal=True
+        )
+        if uniform1 and uniform2:
+            raise Exception("At most one index may be equal over samples.")
+    elif "Index" in convdata[0]:
+        check_index(doc, "Index", "BarcodeMismatchesIndex1", mindist)
+    elif "Index2" in convdata[0]:
+        check_index(doc, "Index2", "BarcodeMismatchesIndex2", mindist)
 
 
 # this is implemented according to https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm

@@ -28,3 +28,6 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/lit-regensburg/samshee"
 "Bug Tracker" = "https://github.com/lit-regensburg/samshee/issues"
+
+[tool.pytest.ini_options]
+pythonpath = "src"
