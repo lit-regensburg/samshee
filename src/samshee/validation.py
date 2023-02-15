@@ -24,7 +24,7 @@ illuminasamplesheetv2schema = {
                 "FileFormatVersion": {"type": "integer", "const": 2},
                 "RunName": {
                     "type": "string",
-                    "pattern": "^[a-zA-Z0-9_\-\.]*$",
+                    "pattern": r"^[-a-zA-Z0-9_\.]*$",
                     "description": "Unique run name of your preference. The RunName can contain alphanumeric characters, underscores, dashes, and periods. If the RunName contains spaces or special characters, analysis fails.",
                 },
                 "RunDescription": {
@@ -85,12 +85,12 @@ illuminasamplesheetv2schema = {
             "properties": {
                 "AdapterRead1": {
                     "type": "string",
-                    "pattern": "^[ACGT]+",
+                    "pattern": r"^[ACGT]+",
                     "description": "The sequence to trim or mask from the end of Read 1. AdapterRead1 trims cycles by default. Value must be <= Read1Cycles.",
                 },
                 "AdapterRead2": {
                     "type": "string",
-                    "pattern": "^[ACGT]+",
+                    "pattern": r"^[ACGT]+",
                     "description": "The sequence to trim or mask from the end of Read 2. AdapterRead2 trims cycles by default. Value must be <= Read2Cycles.",
                 },
                 "BarcodeMismatchesIndex1": {
@@ -113,11 +113,11 @@ illuminasamplesheetv2schema = {
                 },
                 "OverrideCycles": {
                     "type": "string",
-                    "pattern": "^([NYIU][0-9]+;?){1,}$",
+                    "pattern": r"^([NYIU][0-9]+;?){1,}$",
                 },
                 "SoftwareVersion": {
                     "type": "string",
-                    "pattern": "^[0-9]+\.[0-9]+\.[0-9]+.*",
+                    "pattern": r"^[0-9]+\.[0-9]+\.[0-9]+.*",
                 },
             },
             "BCLConvert_Data": {
@@ -126,19 +126,19 @@ illuminasamplesheetv2schema = {
                 "properties": {
                     "Sample_ID": {
                         "type": "string",
-                        "pattern": "^[a-zA-Z0-9\-_]+$",
+                        "pattern": r"^[a-zA-Z0-9\-_]+$",
                         "maxLength": 20,
                         "description": "The ID of the sample. Separate each identifier with a dash or underscore.",
                         "examples": ["Sample1-DQB1-022515"],
                     },
                     "Index": {
                         "type": "string",
-                        "pattern": "^[ACTG]+$",
+                        "pattern": r"^[ACTG]+$",
                         "description": "The index sequence associated with the sample. Required when sequencing more than one sample.",
                     },
                     "Index2": {
                         "type": "string",
-                        "pattern": "^[ACTG]+$",
+                        "pattern": r"^[ACTG]+$",
                         "description": "The second index sequence associated with the sample. Make sure the second index (i5) adapter sequences are in forward orientation. DRAGEN automatically reverse complements i5 indexes during secondary analysis.",
                     },
                     "Lane": {
@@ -148,7 +148,7 @@ illuminasamplesheetv2schema = {
                     },
                     "Sample_Project": {
                         "type": "string",
-                        "pattern": "^[a-zA-Z0-9\-_]+$",
+                        "pattern": r"^[a-zA-Z0-9\-_]+$",
                         "maxLength": 20,
                     },
                 },
