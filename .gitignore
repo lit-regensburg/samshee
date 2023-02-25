@@ -1,4 +1,4 @@
 /dist/
-/samshee.egg-info/
-/samshee/__pycache__/
+**/*.egg-info/
+**/__pycache__/
 /venv/
