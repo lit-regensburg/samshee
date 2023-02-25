@@ -1,6 +1,6 @@
 import itertools
 import re
-from typing import Callable, cast, Mapping, Tuple
+from typing import Callable, cast, Mapping, Tuple, Optional
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ErrorTree, best_match
@@ -297,7 +297,7 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
         # Sample_ID do not need to be unique?!
         convertdata = cast(Data, doc["BCLConvert_Data"])
         if len(convertdata) > 1:
-            if "Index" not in convertdata[0]:
+            if not all(["Index" in sample for sample in convertdata]):
                 raise Exception(
                     "No Index found in BCLConvert_Data, although it contains more than one sample"
                 )
@@ -363,13 +363,13 @@ def basespacelogic(doc: SectionedSheet) -> None:
                     )
 
 
-def check_index_distance(doc: SectionedSheet, mindist: int = 3) -> None:
-    """checks the pairwise distance (Hamming distance) between indices to be smaller than or equal to mindist
-    if doc contains BCLConvert.Settings.BarcodeMismatchesIndex[12], mindist is ignored and this is used instead
-    TODO this requires some changes. BarcodeMismatches means something different...
+def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> None:
+    """checks the pairwise distance (Hamming distance) between indices to be smaller than or equal to the values
+    specified by BarcodeMismatchIndex[12] (they default to 1 in illumina sample sheets).
+    If mindist is given, an additional check on the combined index (index1 + index2) is performed: This combined index is required to have a pairwise distance of at most mindist.
     """
 
-    if mindist < 1:
+    if mindist is not None and mindist < 1:
         raise ValueError("minimal index distance must be >= 1.")
 
     def pairwise_index_distance(a: str, b: str) -> int:
@@ -383,59 +383,90 @@ def check_index_distance(doc: SectionedSheet, mindist: int = 3) -> None:
             shorter = shorter + longer[-(len(longer) - len(shorter)) :]
         return sum([shorter[i] != longer[i] for i in range(len(shorter))])
 
-    def minimal_index_distance(indices: list[str]) -> Tuple[int, str, str]:
-        """returns the minimal distance and the two indices that are closest"""
+    def index_distances(
+        indices: list[list[str]],
+    ) -> list[Tuple[list[int], list[str], list[str]]]:
+        """returns the pairs of indices and their Hammon distances.
+        Indices is an array to account for multiple indices.
+        For every pair, the array of distances (one for each index) and the two indices compared are returned"""
         if len(indices) == 1:
-            return (len(indices[0]), indices[0], indices[0])
+            # if there is only one index entry, we return the one entry and the length of the indices
+            return [([len(i) for i in indices[0]], indices[0], indices[0])]
         elif len(indices) == 0:
             raise Exception("no indices.")
-        return min(
-            [
-                (pairwise_index_distance(p[0], p[1]), p[0], p[1])
-                for p in itertools.combinations(indices, 2)
-            ],
-            key=lambda tup: tup[0],
-        )
+
+        return [
+            (
+                [
+                    pairwise_index_distance(comb[0][i], comb[1][i])
+                    for i in range(len(comb[0]))
+                ],
+                comb[0],
+                comb[1],
+            )
+            for comb in itertools.combinations(indices, 2)
+        ]
 
     def check_index(
         doc: SectionedSheet,
-        indexname: str,
-        mismatchname: str,
-        mindist: int,
-        allow_equal: bool = False,
-    ) -> bool:
-        """returns True if all indices are equal"""
+        indexnames: list[str] | str,
+        mismatchnames: list[str] | str,
+        mindist: Optional[int] = None,
+    ):
+        if isinstance(indexnames, str):
+            indexnames = [indexnames]
+        if isinstance(mismatchnames, str):
+            mismatchnames = [mismatchnames]
         index = [
-            i[indexname] if indexname in i and i[indexname] is not None else ""
+            [
+                i[indexname] if indexname in i and i[indexname] is not None else ""
+                for indexname in indexnames
+            ]
             for i in cast(Data, doc["BCLConvert_Data"])
         ]
-        mismatches = (
-            cast(Settings, doc["BCLConvert_Settings"])[mismatchname]
+
+        mismatches = [
+            cast(int, cast(Settings, doc["BCLConvert_Settings"])[mismatchname])
             if mismatchname in doc["BCLConvert_Settings"]
-            else mindist - 1  # mindist is exclusive (the smallest allowed value)
-        )
+            else 1
+            for mismatchname in mismatchnames
+        ]
 
-        if len(set(index)) == 1 and allow_equal:
-            # index is uniform
-            return True
+        indexdist = index_distances(index)
+        matchingindices = [
+            t
+            for t in indexdist
+            if all([t[0][i] <= mismatches[i] for i in range(len(mismatches))])
+        ]
+        if len(matchingindices) > 0:
+            msg = "Indices are too close and undistinguishable: "
+            for matchingindex in matchingindices:
+                msg += f"Entries of index pair ({str(matchingindex[1])}, {str(matchingindex[2])}) are undistinguishable because "
+                for i, indexname in enumerate(indexnames):
+                    if matchingindex[0][i] <= mismatches[i]:
+                        msg += f"{indexname} differs by {matchingindex[0][i]} <= {mismatches[i]} "
+                msg += ". "
+            raise Exception(msg)
 
-        mindist = minimal_index_distance(index)
-        if mindist[0] <= mismatches:
-            raise Exception(
-                f"{indexname} is too similar. Computed distance is {mindist[0]} between indices {mindist[1]} and {mindist[2]}, while at most {mismatches} is allowed."
-            )
-        return False
+        if mindist is not None:
+            combined = [["".join(i)] for i in index]
+            indexdist = index_distances(combined)
+            matchingindices = [t for t in indexdist if all([t[0][0] < mindist])]
+            if len(matchingindices) > 0:
+                msg = "Combined index is too close and undistinguishable: "
+                for matchingindex in matchingindices:
+                    msg += f"Entries of index pair ({str(matchingindex[1])}, {str(matchingindex[2])}) are undistinguishable because their distance is {matchingindex[0][0]} < {mindist} (which is the explicitly given combined minimal distance)"
+                raise Exception(msg)
 
     convdata = cast(Data, doc["BCLConvert_Data"])
     if "Index" in convdata[0] and "Index2" in convdata[0]:
-        uniform1 = check_index(
-            doc, "Index", "BarcodeMismatchesIndex1", mindist, allow_equal=True
+        check_index(
+            doc,
+            ["Index", "Index2"],
+            ["BarcodeMismatchesIndex1", "BarcodeMismatchesIndex2"],
+            mindist,
         )
-        uniform2 = check_index(
-            doc, "Index2", "BarcodeMismatchesIndex2", mindist, allow_equal=True
-        )
-        if uniform1 and uniform2:
-            raise Exception("At most one index may be equal over samples.")
+
     elif "Index" in convdata[0]:
         check_index(doc, "Index", "BarcodeMismatchesIndex1", mindist)
     elif "Index2" in convdata[0]:

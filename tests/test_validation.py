@@ -21,9 +21,24 @@ def test_if_check_index_distance_accepts_only_mindists_larger_than_0():
         )
 
 
-def test_if_check_index_distance_uses_BarcodeMismatches_rather_than_mindist():
-    # no barcode mismatches, mindist is used and should raise here, because distance
-    # of ACAA to ACTT is 2 and 3 is required
+def test_if_mindist_is_used_if_given_explicitly():
+    # the two sequences below ACAA and ACTT have a distance of two
+    # BarcodeMismatches1 = 1 by default, so this should check (and demultiplex) fine, because if there is one read error, the two are still distinguishable
+    check_index_distance(
+        SectionedSheet(
+            {
+                "Reads": {},
+                "BCLConvert_Settings": {},
+                "BCLConvert_Data": [
+                    {"Sample_ID": "a", "Index": "ACAA"},
+                    {"Sample_ID": "b", "Index": "ACTT"},
+                ],
+            }
+        )
+    )
+    # However, now we set mindist = 3 explicitly, meaning the barcodes should be different in at least three positions
+    # (equivalently in this case, we could have set barcodemismatches = 2. If we had two indices, mindist would apply to the combined)
+    # therefore, the following should now raise an exception, because it violates the mindist requirement (but not the BarcodeMismatches Requirement)
     with pytest.raises(Exception):
         check_index_distance(
             SectionedSheet(
@@ -38,27 +53,25 @@ def test_if_check_index_distance_uses_BarcodeMismatches_rather_than_mindist():
             ),
             mindist=3,
         )
-    # but here, there is barcodemismatches=1 in the sheet.
-    # meaning: one mismatch is allowed for two indices to be considered equal.
-    # Hence, ACAA and ACTT are different enough and should not fail
+    # setting mindist = 2 should be fine again:
     check_index_distance(
         SectionedSheet(
             {
                 "Reads": {},
-                "BCLConvert_Settings": {"BarcodeMismatchesIndex1": 1},
+                "BCLConvert_Settings": {},
                 "BCLConvert_Data": [
                     {"Sample_ID": "a", "Index": "ACAA"},
                     {"Sample_ID": "b", "Index": "ACTT"},
                 ],
             }
         ),
-        mindist=3,
+        mindist=2,
     )
 
 
 def test_if_check_index_distance_accepts_two_indices_with_different_mismatches():
     # below is okay, because the first index has a dist of one, which is sufficient with mismatches=0.
-    # the second has a dist of two, which is sufficient with mismatches=1
+    # the other index is constant, so only the first index differentiates the samples.
     check_index_distance(
         SectionedSheet(
             {
@@ -69,7 +82,7 @@ def test_if_check_index_distance_accepts_two_indices_with_different_mismatches()
                 },
                 "BCLConvert_Data": [
                     {"Sample_ID": "a", "Index": "TTTT", "Index2": "ACAA"},
-                    {"Sample_ID": "b", "Index": "TTTA", "Index2": "ACTT"},
+                    {"Sample_ID": "b", "Index": "TTTA", "Index2": "ACAA"},
                 ],
             }
         )
@@ -86,10 +99,28 @@ def test_if_check_index_distance_accepts_two_indices_with_different_mismatches()
                     },
                     "BCLConvert_Data": [
                         {"Sample_ID": "a", "Index": "TTTT", "Index2": "ACAA"},
-                        {"Sample_ID": "b", "Index": "TTTA", "Index2": "ACTT"},
+                        {"Sample_ID": "b", "Index": "TTTA", "Index2": "ACAA"},
                     ],
                 }
             )
+        )
+    # equally, if we set mindist = 2, this should fail:
+    with pytest.raises(Exception):
+        check_index_distance(
+            SectionedSheet(
+                {
+                    "Reads": {},
+                    "BCLConvert_Settings": {
+                        "BarcodeMismatchesIndex1": 1,
+                        "BarcodeMismatchesIndex2": 1,
+                    },
+                    "BCLConvert_Data": [
+                        {"Sample_ID": "a", "Index": "TTTT", "Index2": "ACAA"},
+                        {"Sample_ID": "b", "Index": "TTTA", "Index2": "ACAA"},
+                    ],
+                }
+            ),
+            mindist=2,
         )
 
 
@@ -124,4 +155,23 @@ def test_if_check_index_distance_rejects_two_indices_with_two_uniform():
                 }
             ),
             mindist=2,  # index2 has mindist of 2, which should be okay.
+        )
+
+
+def test_if_check_index_distance_accepts_two_indices_that_are_different():
+    with pytest.raises(Exception):
+        check_index_distance(
+            SectionedSheet(
+                {
+                    "Reads": {},
+                    "BCLConvert_Settings": {},
+                    "BCLConvert_Data": [
+                        {"Sample_ID": "a", "Index": "TTTT", "Index2": "ACAA"},
+                        {"Sample_ID": "b", "Index": "TTTA", "Index2": "ACAA"},
+                        {"Sample_ID": "b", "Index": "TTTT", "Index2": "ACAC"},
+                        {"Sample_ID": "b", "Index": "TTTA", "Index2": "ACAC"},
+                    ],
+                }
+            ),
+            mindist=1,  # index2 has mindist of 2, which should be okay.
         )
