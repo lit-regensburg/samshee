@@ -108,13 +108,21 @@ def parse_data(contents: str) -> Data:
     """parses a string to a Data section, i.e. reads the section as named csv (first row is a header row)"""
     reader = csv.DictReader(StringIO(contents), delimiter=",", quotechar='"')
     # skip empty rows
-    return Data(
+    d = Data(
         [
             row
             for row in reader
             if not all([row[i] is None or len(row[i]) == 0 for i in row.keys()])
         ]
     )
+    # remove fields that have an empty name (e.g. from trailing commas at line end):
+    if len(d) < 1:
+        return
+    empty_fields = [x for x in d[0].keys() if re.match(r"^\s*$", x)]
+    for e in d:
+        for field in empty_fields:
+            del e[field]
+    return d
 
 
 def parse_sectionedsheet(
@@ -126,7 +134,7 @@ def parse_sectionedsheet(
     """
     _section_pattern = re.compile(r"\[(\w*)\][^\n]*\n([^\[]*)")
     res = SectionedSheet(OrderedDict())
-    for (name, content) in re.findall(_section_pattern, contents):
+    for name, content in re.findall(_section_pattern, contents):
         if name.lower().endswith("settings") | (
             name.lower() in explicitly_settings_section
         ):
