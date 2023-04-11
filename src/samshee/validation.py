@@ -331,12 +331,15 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
                     raise Exception(
                         f"(At least some) Second indices of the samples have a different length than what is specified in OverrideCycles ({minindex2length})"
                     )
-            # indices may be equal if on separate lanes:
+            else:
+                index = index1
+
+            # indices may be equal if on separate lanes, so we add the lane as an additional identifier prefix:
             if "Lane" in convertdata[0]:
                 lane = [i["Lane"] for i in convertdata]
                 index = [str(l) + i for l, i in zip(lane, index)]
-            else:
-                index = index1
+
+            # finally, check if there are non-unique indices:
             if len(set(index)) != len(index):
                 raise Exception("Indices are not unique.")
 
