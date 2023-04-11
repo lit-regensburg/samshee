@@ -331,6 +331,10 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
                     raise Exception(
                         f"(At least some) Second indices of the samples have a different length than what is specified in OverrideCycles ({minindex2length})"
                     )
+            # indices may be equal if on separate lanes:
+            if "Lane" in convertdata[0]:
+                lane = [i["Lane"] for i in convertdata]
+                index = [str(l) + i for l, i in zip(lane, index)]
             else:
                 index = index1
             if len(set(index)) != len(index):
@@ -418,46 +422,59 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
             indexnames = [indexnames]
         if isinstance(mismatchnames, str):
             mismatchnames = [mismatchnames]
-        index = [
+        lanes = set(
             [
-                i[indexname] if indexname in i and i[indexname] is not None else ""
-                for indexname in indexnames
+                int(i["Lane"]) if "Lane" in i else 1
+                for i in cast(Data, doc["BCLConvert_Data"])
             ]
-            for i in cast(Data, doc["BCLConvert_Data"])
-        ]
+        )
+        for lane in lanes:
+            this_lane_data = [
+                i
+                for i in cast(Data, doc["BCLConvert_Data"])
+                if ("Lane" in i and int(i["Lane"]) == lane) or ("Lane" not in i)
+            ]
 
-        mismatches = [
-            cast(int, cast(Settings, doc["BCLConvert_Settings"])[mismatchname])
-            if mismatchname in doc["BCLConvert_Settings"]
-            else 1
-            for mismatchname in mismatchnames
-        ]
+            index = [
+                [
+                    i[indexname] if indexname in i and i[indexname] is not None else ""
+                    for indexname in indexnames
+                ]
+                for i in this_lane_data
+            ]
 
-        indexdist = index_distances(index)
-        matchingindices = [
-            t
-            for t in indexdist
-            if all([t[0][i] <= mismatches[i] for i in range(len(mismatches))])
-        ]
-        if len(matchingindices) > 0:
-            msg = "Indices are too close and undistinguishable: "
-            for matchingindex in matchingindices:
-                msg += f"Entries of index pair ({str(matchingindex[1])}, {str(matchingindex[2])}) are undistinguishable because "
-                for i, indexname in enumerate(indexnames):
-                    if matchingindex[0][i] <= mismatches[i]:
-                        msg += f"{indexname} differs by {matchingindex[0][i]} <= {mismatches[i]} "
-                msg += ". "
-            raise Exception(msg)
+            mismatches = [
+                cast(int, cast(Settings, doc["BCLConvert_Settings"])[mismatchname])
+                if mismatchname in doc["BCLConvert_Settings"]
+                else 1
+                for mismatchname in mismatchnames
+            ]
 
-        if mindist is not None:
-            combined = [["".join(i)] for i in index]
-            indexdist = index_distances(combined)
-            matchingindices = [t for t in indexdist if all([t[0][0] < mindist])]
+            indexdist = index_distances(index)
+            matchingindices = [
+                t
+                for t in indexdist
+                if all([t[0][i] <= mismatches[i] for i in range(len(mismatches))])
+            ]
             if len(matchingindices) > 0:
-                msg = "Combined index is too close and undistinguishable: "
+                msg = "Indices are too close and undistinguishable: "
                 for matchingindex in matchingindices:
-                    msg += f"Entries of index pair ({str(matchingindex[1])}, {str(matchingindex[2])}) are undistinguishable because their distance is {matchingindex[0][0]} < {mindist} (which is the explicitly given combined minimal distance)"
+                    msg += f"Entries of index pair ({str(matchingindex[1])}, {str(matchingindex[2])}) are undistinguishable because "
+                    for i, indexname in enumerate(indexnames):
+                        if matchingindex[0][i] <= mismatches[i]:
+                            msg += f"{indexname} differs by {matchingindex[0][i]} <= {mismatches[i]} "
+                    msg += ". "
                 raise Exception(msg)
+
+            if mindist is not None:
+                combined = [["".join(i)] for i in index]
+                indexdist = index_distances(combined)
+                matchingindices = [t for t in indexdist if all([t[0][0] < mindist])]
+                if len(matchingindices) > 0:
+                    msg = "Combined index is too close and undistinguishable: "
+                    for matchingindex in matchingindices:
+                        msg += f"Entries of index pair ({str(matchingindex[1])}, {str(matchingindex[2])}) are undistinguishable because their distance is {matchingindex[0][0]} < {mindist} (which is the explicitly given combined minimal distance)"
+                    raise Exception(msg)
 
     convdata = cast(Data, doc["BCLConvert_Data"])
     if "Index" in convdata[0] and "Index2" in convdata[0]:
