@@ -318,7 +318,7 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
                 index2 = [i["Index2"] for i in convertdata]
                 index = [i1 + i2 for i1, i2 in zip(index1, index2)]
                 minindex2length = cycles["Index2Cycles"].count("I")
-                maxindex2length = len(cycles["Index1Cycles"])
+                maxindex2length = len(cycles["Index2Cycles"])
                 if not all(
                     [
                         (
@@ -388,7 +388,8 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
     ) -> list[Tuple[list[int], list[str], list[str]]]:
         """returns the pairs of indices and their Hammon distances.
         Indices is an array to account for multiple indices.
-        For every pair, the array of distances (one for each index) and the two indices compared are returned"""
+        For every pair, the array of distances (one for each index) and the two indices compared are returned
+        """
         if len(indices) == 1:
             # if there is only one index entry, we return the one entry and the length of the indices
             return [([len(i) for i in indices[0]], indices[0], indices[0])]
