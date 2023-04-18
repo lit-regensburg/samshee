@@ -117,7 +117,7 @@ illuminasamplesheetv2schema = {
                 },
                 "SoftwareVersion": {
                     "type": "string",
-                    "pattern": r"^[0-9]+\.[0-9]+\.[0-9]+.*",
+                    "pattern": r"^[0-9]+\.[0-9]+.*",
                 },
             },
             "BCLConvert_Data": {
