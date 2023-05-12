@@ -525,7 +525,11 @@ def nextseq1k2klogic(doc: SectionedSheet) -> None:
             )
             if "U" in cycles["Index1Cycles"]:
                 raise Exception("Index1 typically does not contain UMIs")
-            if ("Index2Cycles" in cycles) and (not "U" in cycles["Index2Cycles"]):
+            if (
+                ("Index2Cycles" in cycles)
+                and (len(cycles["Index2Cycles"]) > 10)
+                and (not "U" in cycles["Index2Cycles"])
+            ):
                 raise Exception(
                     "Reads.Index2 must have a maximum length of 10 if it contains only an index and no UMIs."
                 )
