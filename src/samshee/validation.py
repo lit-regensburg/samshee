@@ -206,7 +206,16 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
             res["Index1Cycles"] = cyc
     elif len(cycles) == 3:
         res["Index1Cycles"] = expand(cycles[1])
-        res["Read2Cycles"] = expand(cycles[2])
+        # there may be two indices but just one read
+        if "Y" in cycles[2]:
+            res["Read2Cycles"] = expand(cycles[2])
+        elif "I" in cycles[2] or "N" in cycles[2] or "U" in cycles[2]:
+            res["Index2Cycles"] = expand(cycles[2])
+        else:
+            # there may be edge cases. If these occur, then probably one needs to resort to the sequencing settings section.
+            raise Exception(
+                "cannot determine type of third element in OverrideCycles. Probably an implementation error."
+            )
     elif len(cycles) == 4:
         res["Index1Cycles"] = expand(cycles[1])
         res["Index2Cycles"] = expand(cycles[2])

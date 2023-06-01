@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import pytest
-from samshee.validation import check_index_distance
+from samshee.validation import check_index_distance, parse_overrideCycles
 from samshee.sectionedsheet import SectionedSheet
 
 
@@ -175,3 +175,31 @@ def test_if_check_index_distance_accepts_two_indices_that_are_different():
             ),
             mindist=1,  # index2 has mindist of 2, which should be okay.
         )
+
+
+def test_if_overrideCycles_finds_index_and_reads_correctly():
+    cycles = parse_overrideCycles("Y4")
+    assert "Read1Cycles" in cycles and cycles["Read1Cycles"] == "YYYY"
+    assert "Index1Cycles" not in cycles
+    assert "Index2Cycles" not in cycles
+    assert "Read2Cycles" not in cycles
+    cycles = parse_overrideCycles("Y4;I3")
+    assert "Read1Cycles" in cycles and cycles["Read1Cycles"] == "YYYY"
+    assert "Index1Cycles" in cycles and cycles["Index1Cycles"] == "III"
+    assert "Index2Cycles" not in cycles
+    assert "Read2Cycles" not in cycles
+    cycles = parse_overrideCycles("Y4;I3;I1N2")
+    assert "Read1Cycles" in cycles and cycles["Read1Cycles"] == "YYYY"
+    assert "Index1Cycles" in cycles and cycles["Index1Cycles"] == "III"
+    assert "Index2Cycles" in cycles and cycles["Index2Cycles"] == "INN"
+    assert "Read2Cycles" not in cycles
+    cycles = parse_overrideCycles("Y4;I3;Y2N1")
+    assert "Read1Cycles" in cycles and cycles["Read1Cycles"] == "YYYY"
+    assert "Index1Cycles" in cycles and cycles["Index1Cycles"] == "III"
+    assert "Index2Cycles" not in cycles
+    assert "Read2Cycles" in cycles and cycles["Read2Cycles"] == "YYN"
+    cycles = parse_overrideCycles("Y4;I3;I4;Y2")
+    assert "Read1Cycles" in cycles and cycles["Read1Cycles"] == "YYYY"
+    assert "Index1Cycles" in cycles and cycles["Index1Cycles"] == "III"
+    assert "Index2Cycles" in cycles and cycles["Index2Cycles"] == "IIII"
+    assert "Read2Cycles" in cycles and cycles["Read2Cycles"] == "YY"
