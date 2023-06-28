@@ -2,7 +2,7 @@ import itertools
 import re
 from typing import Callable, cast, Mapping, Tuple, Optional
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft7Validator
 from jsonschema.exceptions import ErrorTree, best_match
 
 from samshee.sectionedsheet import SectionedSheet, Settings, Data
@@ -568,7 +568,7 @@ def validate(doc: SectionedSheet, validation: list[Callable | dict]) -> None:
             name = f"anonymous validator #{i}"
             if "title" in schema:
                 name = schema["title"]
-            v = Draft202012Validator(schema).iter_errors(doc)
+            v = Draft7Validator(schema).iter_errors(doc)
             errs = []
             for err in v:
                 errs.append((err.json_path, err.message))
