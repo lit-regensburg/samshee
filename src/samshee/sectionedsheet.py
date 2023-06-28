@@ -2,7 +2,7 @@ from pathlib import Path
 from collections import OrderedDict
 from typing import TypeAlias, Union
 import re
-from io import StringIO, IOBase
+from io import StringIO, IOBase, TextIOWrapper, TextIOBase
 import csv
 import json
 
@@ -147,8 +147,10 @@ def parse_sectionedsheet(
 
 def read_sectionedsheet(file: Union[Path, str, IOBase]) -> SectionedSheet:
     """reads a file and parses it to a SectionedSheet"""
-    if isinstance(file, IOBase):
+    if isinstance(file, TextIOBase):
         return parse_sectionedsheet(file.read())
+    elif isinstance(file, IOBase):
+        return parse_sectionedsheet(TextIOWrapper(file).read())
     with open(file, "r") as f:
         return parse_sectionedsheet(f.read())
 
