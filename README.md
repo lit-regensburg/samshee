@@ -47,6 +47,15 @@ Exception: anonymous validation function #2 raised validation error: Minimal ind
 
 The first two validators (`illuminasamplesheetv2schema` and `illuminasamplesheetv2logic`) are highly recommended and are meant to enforce illumina® specifications so that the sample sheet is accepted by their tools.
 
+### Command line usage
+A sample sheet can also be linted and validated with the command line interface, 
+
+``` bash
+python -m samshee SampleSheet.csv
+```
+
+This will simply read the sample sheet, check if there are any errors and output it again in a normalized form, so it may also be useful to format samplesheets consistently (use `python -m samshee SampleSheet.csv > SampleSheet_formatted.csv`)
+
 ## SectionedSheet
 A sectioned sheet is a text file that contains one or more ordered sections in ini-file-like syntax. Every section starts with a section header, enclosed in square brackets, e.g. `[Reads]`. Any string on the same line after the section header is ignored.
 
