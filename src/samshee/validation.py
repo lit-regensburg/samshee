@@ -2,10 +2,23 @@ import itertools
 import re
 from typing import Callable, cast, Mapping, Tuple, Optional
 
-from jsonschema import Draft7Validator
+from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ErrorTree, best_match
 
 from samshee.sectionedsheet import SectionedSheet, Settings, Data
+
+from referencing import Registry, Resource
+import requests
+import referencing.retrieval
+
+
+@referencing.retrieval.to_cached_resource()
+def cached_retrieve_via_http(uri):
+    return requests.get(uri).text
+
+
+registry = Registry(retrieve=cached_retrieve_via_http)
+
 
 #
 # a schema that validates a sectioned sheet to be a samplesheet
@@ -13,6 +26,8 @@ from samshee.sectionedsheet import SectionedSheet, Settings, Data
 # https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm
 # (which is not a proper spec, but reasonably close to it and this is my interpretation)
 illuminasamplesheetv2schema = {
+    "$id": "urn:samshee:illuminav2/v1",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "illumina SampleSheetv2 schema spec",
     "type": "object",
     "required": ["Header", "Reads"],
@@ -156,6 +171,7 @@ illuminasamplesheetv2schema = {
         },
     },
 }
+registry = Resource.from_contents(illuminasamplesheetv2schema) @ registry
 
 
 def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
@@ -512,6 +528,8 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
 # Basespace in that case sets OverrideCycles accordingly
 #
 nextseq1k2kschema = {
+    "$id": "urn:samshee:illuminav2-nextseq/v1",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "required": ["Header", "Reads"],
     "properties": {
@@ -524,6 +542,7 @@ nextseq1k2kschema = {
         }
     },
 }
+registry = Resource.from_contents(nextseq1k2kschema) @ registry
 
 
 def nextseq1k2klogic(doc: SectionedSheet) -> None:
@@ -544,14 +563,21 @@ def nextseq1k2klogic(doc: SectionedSheet) -> None:
                 )
 
 
-def validate(doc: SectionedSheet, validation: list[Callable | dict]) -> None:
+def validate(
+    doc: SectionedSheet,
+    validation: Callable | dict | list[Callable | dict],
+    registry=registry,
+) -> None:
+    """validation may either be a callable function or a dict specifying a (in-built or retrievable) json schema, e.g. {"$ref": "urn:samshee:illuminav2/v1"}"""
     # TODO validation may also contain schema URLs
     if validation is None:
         schemata = []
     elif isinstance(validation, list):
         pass
     else:
-        validation = [validation]
+        validation = [
+            validation
+        ]  # if there is only one entry, we allow to pass it not as a list
     for i, schema in enumerate(validation):
         if not (isinstance(schema, dict) or callable(schema)):
             if hasattr(schema, "name"):
@@ -564,11 +590,9 @@ def validate(doc: SectionedSheet, validation: list[Callable | dict]) -> None:
                 )
 
     for i, schema in enumerate(validation):
-        if isinstance(schema, dict):
-            name = f"anonymous validator #{i}"
-            if "title" in schema:
-                name = schema["title"]
-            v = Draft7Validator(schema).iter_errors(doc)
+        if isinstance(schema, str):
+            name = f"validator #{i} ({schema})"
+            v = Draft202012Validator(schema, registry=registry).iter_errors(doc)
             errs = []
             for err in v:
                 errs.append((err.json_path, err.message))

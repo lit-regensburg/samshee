@@ -22,7 +22,8 @@ classifiers = [
     "Development Status :: 2 - Pre-Alpha",
 ]
 dependencies = [
-    "jsonschema>=4.17"
+    "jsonschema>=4.19",
+    "requests>=2.31.0"
 ]
 
 [project.urls]

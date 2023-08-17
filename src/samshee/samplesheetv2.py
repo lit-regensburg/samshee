@@ -13,9 +13,9 @@ from samshee.sectionedsheet import (
 )
 from samshee.validation import (
     validate,
-    illuminasamplesheetv2schema,
     illuminasamplesheetv2logic,
 )
+from samshee.validation import registry as samsheeschemaregistry
 
 
 class SampleSheetV2:
@@ -27,13 +27,15 @@ class SampleSheetV2:
         self,
         secsheet: SectionedSheet = SectionedSheet(),
         validation: list[Callable | dict] = [
-            illuminasamplesheetv2schema,
+            {"$ref": "urn:samshee:illuminav2/v1"},
             illuminasamplesheetv2logic,
         ],
+        registry=samsheeschemaregistry,
     ) -> None:
         """Parsing from"""
-        validate(cast(SectionedSheet, secsheet), validation)
+        validate(cast(SectionedSheet, secsheet), validation, registry=registry)
         self.validation = validation
+        self.registry = registry
 
         def secname(k: str) -> str:
             secsel = re.compile("^(.*)_(Settings|Data)$")
@@ -73,7 +75,7 @@ class SampleSheetV2:
             if "data" in app:
                 res[appname + "_Data"] = app["data"]
         if validate_schema:
-            validate(res, self.validation)
+            validate(res, self.validation, self.registry)
         return res
 
     def __str__(self) -> str:
@@ -89,21 +91,29 @@ class SampleSheetV2:
 
 
 def read_samplesheetv2(
-    fromfile, validation=[illuminasamplesheetv2schema, illuminasamplesheetv2logic]
+    fromfile,
+    validation=[{"$ref": "urn:samshee:illuminav2/v1"}, illuminasamplesheetv2logic],
+    registry=samsheeschemaregistry,
 ) -> SampleSheetV2:
     """reads a SampleSheetv2 from a file by first parsing it as a SectionedSheet and then validating it against the standard schemata"""
-    return SampleSheetV2(read_sectionedsheet(fromfile), validation=validation)
+    return SampleSheetV2(
+        read_sectionedsheet(fromfile), validation=validation, registry=registry
+    )
 
 
 def parse_samplesheetv2_from_json(
-    jsonstr: str, validation=[illuminasamplesheetv2schema, illuminasamplesheetv2logic]
+    jsonstr: str,
+    validation=[{"$ref": "urn:samshee:illuminav2/v1"}, illuminasamplesheetv2logic],
+    registry=samsheeschemaregistry,
 ) -> SampleSheetV2:
     """parses a SampleSheetv2 from a json string by first parsing it as a SectionedSheet and then validating it against the standard schemata"""
     return SampleSheetV2(parse_sectionedsheet_from_json(jsonstr), validation)
 
 
 def parse_samplesheetv2_from_object(
-    obj, validation=[illuminasamplesheetv2schema, illuminasamplesheetv2logic]
+    obj,
+    validation=[{"$ref": "urn:samshee:illuminav2/v1"}, illuminasamplesheetv2logic],
+    registry=samsheeschemaregistry,
 ) -> SampleSheetV2:
     """constructs a SampleSheetv2 from a object (dict) by first constructing a SectionedSheet from it and then validating it against the standard schemata"""
     return parse_samplesheetv2_from_json(json.dumps(obj))
