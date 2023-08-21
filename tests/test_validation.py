@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import pytest
-from samshee.validation import check_index_distance, parse_overrideCycles
+from samshee.validation import check_index_distance, parse_overrideCycles, validate
+import samshee.validation as val
 from samshee.sectionedsheet import SectionedSheet
 
 
@@ -203,3 +204,45 @@ def test_if_overrideCycles_finds_index_and_reads_correctly():
     assert "Index1Cycles" in cycles and cycles["Index1Cycles"] == "III"
     assert "Index2Cycles" in cycles and cycles["Index2Cycles"] == "IIII"
     assert "Read2Cycles" in cycles and cycles["Read2Cycles"] == "YY"
+
+
+def test_if_sheet_without_fileversion_throws():
+    sheet = SectionedSheet(
+        {
+            "Header": {"FileFormatVersion": 1},
+            "Reads": {},
+            "BCLConvert_Settings": {},
+            "BCLConvert_Data": [
+                {"Sample_ID": "a", "Index": "ACAA"},
+                {"Sample_ID": "b", "Index": "ACTT"},
+            ],
+        }
+    )
+    with pytest.raises(Exception, match="FileFormatVersion: 2 was expected"):
+        validate(
+            sheet,
+            validation=[
+                {"$ref": "urn:samshee:illuminav2/v1"},
+            ],
+        )
+
+
+def test_if_unknown_schema_throws():
+    sheet = SectionedSheet(
+        {
+            "Header": {"FileFormatVersion": 1},
+            "Reads": {},
+            "BCLConvert_Settings": {},
+            "BCLConvert_Data": [
+                {"Sample_ID": "a", "Index": "ACAA"},
+                {"Sample_ID": "b", "Index": "ACTT"},
+            ],
+        }
+    )
+    with pytest.raises(Exception, match="Unresolvable"):
+        validate(
+            sheet,
+            validation=[
+                {"$ref": "https://google.com"},
+            ],
+        )

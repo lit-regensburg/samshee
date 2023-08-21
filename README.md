@@ -47,6 +47,9 @@ Exception: anonymous validation function #2 raised validation error: Minimal ind
 
 The first two validators (`illuminasamplesheetv2schema` and `illuminasamplesheetv2logic`) are highly recommended and are meant to enforce illumina® specifications so that the sample sheet is accepted by their tools.
 
+See "Validation" below for valid arguments for `validation`.
+
+
 ### Command line usage
 A sample sheet can also be linted and validated with the command line interface, 
 
@@ -122,3 +125,5 @@ samplesheet = SampleSheetV2(secsheet, validation = [illuminasamplesheetv2schema,
 ```
 
 Json schemata must follow the [json-schema spec](https://json-schema.org/draft/2020-12/json-schema-validation.html), functions may perform any operations and are expected to raise exceptions if a SectionedSheet is invalid.
+
+It is also possible to refer to schemata, e.g. `{"$ref": "urn:samshee:illuminav2/v1"}` is equivalent to passing `illuminasamplesheetv2schema` for validating against the built-in schema. For referencing an externally hosted schema, use resolvable URLs, e.g. `{"$ref": "https://dataportal.lit.eu/schemas/litngscoresamplesheet/v0.1/litngscoresamplesheet.schema.json"}` will check against the schema that we use in the LIT NGS Core.

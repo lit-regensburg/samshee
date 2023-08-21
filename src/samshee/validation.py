@@ -590,7 +590,7 @@ def validate(
                 )
 
     for i, schema in enumerate(validation):
-        if isinstance(schema, str):
+        if isinstance(schema, dict):
             name = f"validator #{i} ({schema})"
             v = Draft202012Validator(schema, registry=registry).iter_errors(doc)
             errs = []
@@ -609,3 +609,7 @@ def validate(
                 schema(doc)
             except Exception as exc:
                 raise Exception(f"{name} raised validation error: {exc}")
+        else:
+            raise Exception(
+                f"anonymous validator / schema #{i} is not a schema or is not callable."
+            )
