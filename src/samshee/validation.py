@@ -204,8 +204,8 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
             res += letter * int(freq)
         return res
 
-    def is_read(s: str) -> bool:
-        return "Y" in s
+    def is_read_or_umi(s: str) -> bool:
+        return ("Y" in s) or ("U" in s)
 
     cycles = cyclestr.split(";")
     if len(cycles) < 1:
@@ -216,7 +216,7 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
     if len(cycles) == 2:
         # cycles[1] may now either be the second read, or the first index
         cyc = expand(cycles[1])
-        if is_read(cyc):
+        if is_read_or_umi(cyc):
             res["Read2Cycles"] = cyc
         else:
             res["Index1Cycles"] = cyc
@@ -240,19 +240,19 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
         pass
     else:
         raise Exception(f"OverrideCycles {cyclestr} defines too many elements.")
-    if not is_read(res["Read1Cycles"]):
+    if not is_read_or_umi(res["Read1Cycles"]):
         raise Exception(
             f"Read1Cycles entry in OverrideCycles is not a read: {res['Read1Cycles']}"
         )
-    if ("Read2Cycles" in res) and (not is_read(res["Read2Cycles"])):
+    if ("Read2Cycles" in res) and (not is_read_or_umi(res["Read2Cycles"])):
         raise Exception(
             f"Read2Cycles entry in OverrideCycles is not a read: {res['Read2Cycles']}"
         )
-    if ("Index1Cycles" in res) and (is_read(res["Index1Cycles"])):
+    if ("Index1Cycles" in res) and (is_read_or_umi(res["Index1Cycles"])):
         raise Exception(
             f"Index1Cycles entry in OverrideCycles contains reads: {res['Index1Cycles']}"
         )
-    if ("Index2Cycles" in res) and (is_read(res["Index2Cycles"])):
+    if ("Index2Cycles" in res) and (is_read_or_umi(res["Index2Cycles"])):
         raise Exception(
             f"Index2Cycles entry in OverrideCycles contains reads: {res['Index2Cycles']}"
         )
