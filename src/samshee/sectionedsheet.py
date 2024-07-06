@@ -106,7 +106,7 @@ def parse_settings(contents: str) -> Settings:
 
 def parse_data(contents: str) -> Data:
     """parses a string to a Data section, i.e. reads the section as named csv (first row is a header row)"""
-    reader = csv.DictReader(StringIO(contents), delimiter=",", quotechar='"')
+    reader = csv.DictReader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
     # skip empty rows
     d = Data(
         [
