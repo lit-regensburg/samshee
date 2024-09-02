@@ -51,7 +51,7 @@ class Array(list[ValueType]):
 
     def __str__(self) -> str:
         res = ""
-        for value in self.items():
+        for value in self:
             if isinstance(value, str):
                 res += f"\"{value}\"\n"
             else:
@@ -136,7 +136,6 @@ def parse_data(contents: str) -> Data:
     # remove fields that have an empty name (e.g. from trailing commas at line end):
     if len(d) < 1:
         raise ValueError("no content in Data Section")
-    print(d[0].keys())
     if len(d[0].keys()) <= 1:
         raise ValueError("A Data section must have at least two fields (else it may be a settings section)")
     empty_fields = [x for x in d[0].keys() if re.match(r"^\s*$", x)]
@@ -160,12 +159,12 @@ def parse_array(contents: str) -> Array:
 
 def parse_anything(sectionname: str, contents: str) -> ValueType:
     """parses an section and tries to guess the section type.
-    if section names end with "_settings" or "_data", Settings and Data sections are assumed, respectively.
+    if section names end with "settings" or "data", Settings and Data sections are assumed, respectively.
     for sections that do not end in this way, everything is tried out and the section type will be whatever matches first of Settings, Data, Array (in this order)
     """
-    if sectionname[1].lower().endswith("_settings"):
+    if sectionname[1].lower().endswith("settings"):
         return parse_settings(contents)
-    elif sectionname[1].lower().endswith("_data"):
+    elif sectionname[1].lower().endswith("data"):
         return parse_data(contents)
     else:
         try:
@@ -183,7 +182,7 @@ def parse_anything(sectionname: str, contents: str) -> ValueType:
 
 
 def parse_sectionedsheet(
-    contents: str, explicitly_settings_section=["header", "reads"]
+    contents: str
 ) -> SectionedSheet:
     """parses string to a SectionedSheet, i.e. to an ordered dict of sections.
     by default, sections that are named "header" or "reads", or are suffixed "settings" are assumed to be settings sections.
@@ -192,13 +191,6 @@ def parse_sectionedsheet(
     _section_pattern = re.compile(r"\[(\w*)\][^\n]*\n([^\[]*)")
     res = SectionedSheet(OrderedDict())
     for name, content in re.findall(_section_pattern, contents):
-        # if name.lower().endswith("settings") | (
-        #     name.lower() in explicitly_settings_section
-        # ):
-        #     s = parse_settings(content.rstrip("\n "))
-        #     res[name] = s
-        # else:
-        #     res[name] = parse_data(content.rstrip("\n "))
         res[name] = parse_anything(name, content.rstrip("\n "))
     return res
 
@@ -214,22 +206,31 @@ def read_sectionedsheet(file: Union[Path, str, IOBase]) -> SectionedSheet:
 
 
 def parse_sectionedsheet_from_json(
-    jsonstr: str, explicitly_settings_section=["header", "reads"]
+    jsonstr: str
 ) -> SectionedSheet:
     """parses a json string to a SectionedSheet"""
     a = json.loads(jsonstr, object_pairs_hook=OrderedDict)
     for k in a.keys():
-        if (k.lower() in explicitly_settings_section) or (
-            k.lower().endswith("settings")
-        ):
+        if k.lower().endswith("settings"):
             a[k] = Settings(a[k])
-        else:
+        elif k.lower().endswith("data"):
             a[k] = Data(a[k])
+        else:
+            try:
+                a[k] = Settings(a[k])
+            except:
+                pass
+            try:
+                a[k] = Data(a[k])
+            except:
+                pass
+            try:
+                a[k] = Array(a[k])
+            except:
+                raise ValueError("Cannot guess section type")
     return SectionedSheet(a)
 
 
-def parse_sectionedsheet_from_object(
-    obj, explicitly_settings_section=["header", "reads"]
-) -> SectionedSheet:
+def parse_sectionedsheet_from_object(obj) -> SectionedSheet:
     """parses a object (e.g. read from json, or yaml, ...) to a SectionedSheet"""
-    return parse_sectionedsheet_from_json(json.dumps(obj), explicitly_settings_section)
+    return parse_sectionedsheet_from_json(json.dumps(obj))
