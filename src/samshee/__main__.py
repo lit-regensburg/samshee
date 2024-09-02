@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from samshee.samplesheetv2 import SampleSheetV2, read_samplesheetv2, parse_samplesheetv2_from_json
-from samshee.sectionedsheet import read_sectionedsheet
+from samshee.samplesheetv2 import SampleSheetV2, read_samplesheetv2
+from samshee.sectionedsheet import read_sectionedsheet, parse_sectionedsheet_from_json
 from samshee.validation import validate
 import sys
 import argparse
@@ -28,7 +28,7 @@ try:
     if args.input_format == "json":
         with infile.open("r") as fh:
             jstr = fh.read()
-        sheet = parse_samplesheetv2_from_json(jstr)
+        sheet = parse_sectionedsheet_from_json(jstr)
     elif args.input_format == "sectioned":
         sheet = read_sectionedsheet(infile)
     else:
