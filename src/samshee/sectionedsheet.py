@@ -15,6 +15,8 @@ class Settings(OrderedDict[str, ValueType]):
     """A type that stores settings: Ordered key-value pairs"""
 
     def __init__(self, init=OrderedDict()) -> None:
+        assert isinstance(init, dict), "Settings: init argument is not a dict"
+        assert all([not isinstance(o, dict) for o in init.values()]), "Settings: init argument does contain dicts (only simple values allowed)"
         super().__init__(init)
 
     def __str__(self) -> str:
@@ -29,6 +31,7 @@ class Data(list[dict]):
     """A type that stores a Data section, i.e. a list of objects represented as named columns in a csv section"""
 
     def __init__(self, init=list()) -> None:
+        assert isinstance(init, list), "Data: init argument is not a list."
         super().__init__(init)
 
     def __str__(self) -> str:
@@ -48,6 +51,9 @@ class Data(list[dict]):
 class Array(list[ValueType]):
     """A type that stores an array of values (e.g. sample sheet v1 Settings sections)"""
     def __init__(self, init=list()) -> None:
+        if len(init) > 0:
+            dtype = type(init[0])
+            assert all([isinstance(o, dtype) for o in init]), "Array: Array is not uniformly typed (mixed data types)"
         super().__init__(init)
 
     def __str__(self) -> str:
@@ -106,8 +112,6 @@ def parse_value(contents: str) -> ValueType:
 
 def parse_settings(contents: str) -> Settings:
     """parses a string to a settings section (a key-value store)"""
-    res = Settings()
-
     peaker, reader = itertools.tee(csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"'))
     # get number of columns
     ncols = len([field for field in next(peaker) if field != ""])
@@ -117,10 +121,10 @@ def parse_settings(contents: str) -> Settings:
         raise ValueError("string cannot be parsed into Settings, because it is not a two-columns section.")
 
     d = Settings(
-        [
+        OrderedDict([
             (row[0], parse_value(row[1]))
             for row in reader if row[0] != ""
-        ]
+        ])
     )
     if len(d) == 0:
         raise ValueError("string cannot be parsed to Settings")
@@ -151,13 +155,15 @@ def parse_data(contents: str) -> Data:
         [
             row
             for row in reader
-            if not all([row[i] is None or len(row[i]) == 0 for i in row.keys()]) and not any([key == '' for key in row.keys()])
+            if not all([row[i] is None or len(row[i]) == 0 for i in row.keys()]) # and not any([key == '' for key in row.keys()])
         ]
     )
     # remove fields that have an empty name (e.g. from trailing commas at line end):
     if len(d) < 1:
+        print(d)
+        print(contents.lstrip("\n\r "))
         raise ValueError("no content in Data Section")
-    if len(d[0].keys()) <= 1:
+    if len(d[0].keys()) < 2:
         raise ValueError("A Data section must have at least two fields (else it may be a settings section)")
     empty_fields = [x for x in d[0].keys() if re.match(r"^\s*$", x)]
     for e in d:
@@ -190,9 +196,9 @@ def parse_anything(sectionname: str, contents: str) -> ValueType:
     if section names end with "settings" or "data", Settings and Data sections are assumed, respectively.
     for sections that do not end in this way, everything is tried out and the section type will be whatever matches first of Settings, Data, Array (in this order)
     """
-    if sectionname[1].lower().endswith("settings"):
+    if sectionname.lower().endswith("settings"):
         return parse_settings(contents)
-    elif sectionname[1].lower().endswith("data"):
+    elif sectionname.lower().endswith("data"):
         return parse_data(contents)
     else:
         try:
@@ -206,7 +212,8 @@ def parse_anything(sectionname: str, contents: str) -> ValueType:
         try:
             return parse_array(contents)
         except:
-            raise ValueError("Cannot guess section type")
+            pass
+        raise ValueError("Cannot guess section type")
 
 
 def parse_sectionedsheet(
@@ -232,6 +239,19 @@ def read_sectionedsheet(file: Union[Path, str, IOBase]) -> SectionedSheet:
     with open(file, "r") as f:
         return parse_sectionedsheet(f.read())
 
+def guess_section_from_object(obj: dict) -> ValueType:
+    try:
+        return Settings(obj)
+    except:
+        pass
+    try:
+        return Data(obj)
+    except:
+        pass
+    try:
+        return Array(obj)
+    except:
+        raise ValueError("Cannot guess section type")
 
 def parse_sectionedsheet_from_json(
     jsonstr: str
@@ -244,18 +264,7 @@ def parse_sectionedsheet_from_json(
         elif k.lower().endswith("data"):
             a[k] = Data(a[k])
         else:
-            try:
-                a[k] = Settings(a[k])
-            except:
-                pass
-            try:
-                a[k] = Data(a[k])
-            except:
-                pass
-            try:
-                a[k] = Array(a[k])
-            except:
-                raise ValueError("Cannot guess section type")
+            a[k] = guess_section_from_object(a[k])
     return SectionedSheet(a)
 
 
