@@ -86,8 +86,8 @@ class SampleSheetV2:
         """writes a string representation of the sample sheet (adheres to the usual sample sheet format) to a file"""
         return self.to_sectionedsheet().write(filehandle)
 
-    def to_json(self) -> str:
-        return self.to_sectionedsheet().to_json()
+    def to_json(self, pretty=False) -> str:
+        return self.to_sectionedsheet().to_json(pretty)
 
 
 def read_samplesheetv2(

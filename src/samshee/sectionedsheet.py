@@ -67,9 +67,12 @@ class SectionedSheet(OrderedDict[str, Section]):
         """writes the sheet to a file"""
         filehandle.write(str(self))
 
-    def to_json(self) -> str:
+    def to_json(self, pretty=False) -> str:
         """converts the sheet to a json string"""
-        return json.dumps(self)
+        if pretty:
+            return json.dumps(self, indent=4)
+        else:
+            return json.dumps(self)
 
 
 def parse_value(contents: str) -> ValueType:
