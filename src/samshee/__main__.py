@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from samshee.samplesheetv2 import SampleSheetV2, read_samplesheetv2, parse_samplesheetv2_from_json
-#from samshee.samplesheetv1 import read_samplesheetv1
 from samshee.sectionedsheet import read_sectionedsheet
 from samshee.validation import validate
 import sys
