@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import pytest
-from samshee.sectionedsheet import SectionedSheet, read_sectionedsheet
+from samshee.sectionedsheet import SectionedSheet, read_sectionedsheet, parse_array
 import tempfile
 from io import StringIO
 from pathlib import Path
@@ -70,3 +70,18 @@ Index2Cycles,10
 
     with fname.open("rb") as fh:
         read_sectionedsheet(fh)
+
+def test_can_read_array():
+    s = """
+[Reads]
+28,
+90,
+10,,
+10
+"""
+    a = parse_array(s)
+    assert len(a) == 4
+    assert a[0] == 28
+    assert a[1] == 90
+    assert a[2] == 10
+    assert a[3] == 10

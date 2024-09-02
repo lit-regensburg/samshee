@@ -44,9 +44,24 @@ class Data(list[dict]):
             writer.writerow(row)
         return res.getvalue() + "\n\n"
 
+class Array(list[ValueType]):
+    """A type that stores an array of values (e.g. sample sheet v1 Settings sections)"""
+    def __init__(self, init=list()) -> None:
+        super().__init__(init)
+
+    def __str__(self) -> str:
+        res = ""
+        for value in self.items():
+            if isinstance(value, str):
+                res += f"\"{value}\"\n"
+            else:
+                res += f"{value}\n"
+        res += "\n\n"
+        return res
+
 
 """any section"""
-Section: TypeAlias = Union[Settings, Data]
+Section: TypeAlias = Union[Settings, Data, Array]
 
 
 class SectionedSheet(OrderedDict[str, Section]):
@@ -115,17 +130,56 @@ def parse_data(contents: str) -> Data:
         [
             row
             for row in reader
-            if not all([row[i] is None or len(row[i]) == 0 for i in row.keys()])
+            if not all([row[i] is None or len(row[i]) == 0 for i in row.keys()]) and not any([key == '' for key in row.keys()])
         ]
     )
     # remove fields that have an empty name (e.g. from trailing commas at line end):
     if len(d) < 1:
-        return
+        raise ValueError("no content in Data Section")
+    print(d[0].keys())
+    if len(d[0].keys()) <= 1:
+        raise ValueError("A Data section must have at least two fields (else it may be a settings section)")
     empty_fields = [x for x in d[0].keys() if re.match(r"^\s*$", x)]
     for e in d:
         for field in empty_fields:
             del e[field]
     return d
+
+def parse_array(contents: str) -> Array:
+    """parses an Array section, i.e. every line is one value, no header, other fields are ignored"""
+    reader = csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
+    is_header_re = re.compile(r"^\[.*\]$")
+    d = Array(
+        [
+            parse_value(row[0])
+            for row in reader
+            if len(row) > 0 and row[0] != "" and not re.match(is_header_re, row[0])
+        ]
+    )
+    return d
+
+def parse_anything(sectionname: str, contents: str) -> ValueType:
+    """parses an section and tries to guess the section type.
+    if section names end with "_settings" or "_data", Settings and Data sections are assumed, respectively.
+    for sections that do not end in this way, everything is tried out and the section type will be whatever matches first of Settings, Data, Array (in this order)
+    """
+    if sectionname[1].lower().endswith("_settings"):
+        return parse_settings(contents)
+    elif sectionname[1].lower().endswith("_data"):
+        return parse_data(contents)
+    else:
+        try:
+            return parse_settings(contents)
+        except:
+            pass
+        try:
+            return parse_data(contents)
+        except:
+            pass
+        try:
+            return parse_array(contents)
+        except:
+            raise ValueError("Cannot guess section type")
 
 
 def parse_sectionedsheet(
@@ -138,13 +192,14 @@ def parse_sectionedsheet(
     _section_pattern = re.compile(r"\[(\w*)\][^\n]*\n([^\[]*)")
     res = SectionedSheet(OrderedDict())
     for name, content in re.findall(_section_pattern, contents):
-        if name.lower().endswith("settings") | (
-            name.lower() in explicitly_settings_section
-        ):
-            s = parse_settings(content.rstrip("\n "))
-            res[name] = s
-        else:
-            res[name] = parse_data(content.rstrip("\n "))
+        # if name.lower().endswith("settings") | (
+        #     name.lower() in explicitly_settings_section
+        # ):
+        #     s = parse_settings(content.rstrip("\n "))
+        #     res[name] = s
+        # else:
+        #     res[name] = parse_data(content.rstrip("\n "))
+        res[name] = parse_anything(name, content.rstrip("\n "))
     return res
 
 
