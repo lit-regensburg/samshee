@@ -5,6 +5,7 @@ import re
 from io import StringIO, IOBase, TextIOWrapper, TextIOBase
 import csv
 import json
+import itertools
 
 """A simple value type."""
 ValueType: TypeAlias = Union[str, int, float, bool]
@@ -106,20 +107,39 @@ def parse_value(contents: str) -> ValueType:
 def parse_settings(contents: str) -> Settings:
     """parses a string to a settings section (a key-value store)"""
     res = Settings()
-    for i, line in enumerate(contents.split("\n")):
-        unpacked = line.rstrip(",").split(",")
-        # test if the key is meaningful, i.e. not from an empty line
-        # the latter can happen in quoted sheets, where this corresponds to the last " before the next section
-        if len(unpacked[0]) == 0 or unpacked[0] == '"':
-            continue
-        elif len(unpacked) != 2:
-            raise Exception(f"Malformed line #{i} {line}")
-        key = unpacked[0].replace('"', "")
-        value = unpacked[
-            1
-        ]  # quoting in values is okay and prevents parsing as int / float
-        res[key.replace('"', "")] = parse_value(value)
-    return res
+
+    peaker, reader = itertools.tee(csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"'))
+    # get number of columns
+    ncols = len([field for field in next(peaker) if field != ""])
+    del peaker
+
+    if ncols != 2:
+        raise ValueError("string cannot be parsed into Settings, because it is not a two-columns section.")
+
+    d = Settings(
+        [
+            (row[0], parse_value(row[1]))
+            for row in reader
+        ]
+    )
+    if len(d) == 0:
+        raise ValueError("string cannot be parsed to Settings")
+    return d
+#
+#   for i, line in enumerate(contents.split("\n")):
+#       unpacked = line.rstrip(",").split(",")
+#       # test if the key is meaningful, i.e. not from an empty line
+#       # the latter can happen in quoted sheets, where this corresponds to the last " before the next section
+#       if len(unpacked[0]) == 0 or unpacked[0] == '"':
+#           continue
+#       elif len(unpacked) != 2:
+#           raise Exception(f"Malformed line #{i} {line}")
+#       key = unpacked[0].replace('"', "")
+#       value = unpacked[
+#           1
+#       ]  # quoting in values is okay and prevents parsing as int / float
+#       res[key.replace('"', "")] = parse_value(value)
+#   return res
 
 
 def parse_data(contents: str) -> Data:
@@ -146,7 +166,14 @@ def parse_data(contents: str) -> Data:
 
 def parse_array(contents: str) -> Array:
     """parses an Array section, i.e. every line is one value, no header, other fields are ignored"""
-    reader = csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
+    peaker, reader = itertools.tee(csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"'))
+    # get number of columns
+    ncols = len([field for field in next(peaker) if field != ""])
+    del peaker
+
+    if ncols != 1:
+        raise ValueError("string cannot be parsed into Array, because it is not a single column section.")
+
     is_header_re = re.compile(r"^\[.*\]$")
     d = Array(
         [
