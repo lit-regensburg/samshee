@@ -119,11 +119,12 @@ def parse_settings(contents: str) -> Settings:
     d = Settings(
         [
             (row[0], parse_value(row[1]))
-            for row in reader
+            for row in reader if row[0] != ""
         ]
     )
     if len(d) == 0:
         raise ValueError("string cannot be parsed to Settings")
+
     return d
 #
 #   for i, line in enumerate(contents.split("\n")):
