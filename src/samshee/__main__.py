@@ -6,6 +6,7 @@ import sys
 import argparse
 import json
 from pathlib import Path
+from io import TextIOBase
 
 parser = argparse.ArgumentParser()
 
@@ -20,14 +21,17 @@ parser.add_argument("--schema", help="specifies an additional schema (other than
 args = parser.parse_args()
 
 if args.infile == "-":
-    infile = sys.stdin
+    infile = sys.stdin # is a open TextIOWrapper
 else:
-    infile = Path(args.infile)
+    infile = Path(args.infile) # needs to be opened
 
 try:
     if args.input_format == "json":
-        with infile.open("r") as fh:
-            jstr = fh.read()
+        if isinstance(infile, TextIOBase):
+            jstr = infile.read()
+        else:
+            with open(infile, "r") as fh:
+                jstr = fh.read()
         sheet = parse_sectionedsheet_from_json(jstr)
     elif args.input_format == "sectioned":
         sheet = read_sectionedsheet(infile)
