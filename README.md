@@ -127,3 +127,57 @@ samplesheet = SampleSheetV2(secsheet, validation = [illuminasamplesheetv2schema,
 Json schemata must follow the [json-schema spec](https://json-schema.org/draft/2020-12/json-schema-validation.html), functions may perform any operations and are expected to raise exceptions if a SectionedSheet is invalid.
 
 It is also possible to refer to schemata, e.g. `{"$ref": "urn:samshee:illuminav2/v1"}` is equivalent to passing `illuminasamplesheetv2schema` for validating against the built-in schema. For referencing an externally hosted schema, use resolvable URLs, e.g. `{"$ref": "https://dataportal.lit.eu/schemas/litngscoresamplesheet/v0.1/litngscoresamplesheet.schema.json"}` will check against the schema that we use in the LIT NGS Core.
+
+## Commandline tool
+Samshee comes with a simple command line tool that does nothing more than reading a sectioned sheet (either in normal text or json form), possibly validates it and prints it. This can be used for linting, format conversions or validating sheets on the command line.
+
+## in- and output
+
+The output is always printed to stdout that can be redirected to a file. If the input sheet should be read from stdin, the special filename `-` must be used:
+
+``` bash
+cat test.csv | python -m samshee -
+# equivalent to
+python -m samshee test.csv
+```
+
+## Converting between formats
+
+To convert a sample sheet to json, simply specify the output format:
+``` bash
+python -m samshee --output-format json test.csv
+```
+
+An interesting application of this is to easily extract information from a sheet, e.g. with [jq](https://jqlang.github.io/jq/):
+
+``` bash
+python -m samshee --output-format json test.csv | jq '.["Reads"]["Read1Cycles"]+.["Reads"]["Read2Cycles"]'
+# will print the total read length (without indices)
+```
+
+If the input is not a sectioned sheet, but a json file (to convert back), this must be stated explicitly as well:
+``` bash
+python -m samshee --input-format json test.json
+```
+
+## Schema validation
+Samshee allows to validate against an external (json) schema given as argument, e.g., to check if there is a section `Data`, one could do
+``` bash
+python -m samshee --schema '{"requires": ["Data"]}' test.csv
+```
+
+Note that this does **not** bypass any validation that is done during printing the output, e.g., if the output prints to a v2 samplesheet (the default), the schema `urn:samshee:illuminav2/v1` is checked regardless of the schema option. To circumvent this, explicitly state `sectioned` as output format (which is not validated):
+``` bash
+python -m samshee --schema '{"requires": ["Data"]}' --output-format sectioned test.csv
+```
+
+Several schemas can simply be chained:
+``` bash
+python -m samshee --schema '{"$ref": "urn:samshee:illuminav2/v1"}' --schema '{"requires": ["BCLConvert_Data"]}' --output-format sectioned test.csv
+```
+This example will first check if the illuminav2 schema is fulfilled and then if a `BCLConvert_Data` section is present.
+
+Schema definitions can also be retrieved automatically from a remote URL. The following example will check if the test sheet is a v2 sample sheet (because it is the default output) that also fulfills conventions in place at the NGS Core of the [LIT](https://lit.eu):
+``` bash
+python -m samshee --schema '{"$ref": "https://dataportal.lit.eu/schemas/litngscoresamplesheet/v0.1/litngscoresamplesheet.schema.json"}' test.csv
+```
