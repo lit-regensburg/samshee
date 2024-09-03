@@ -129,9 +129,9 @@ Json schemata must follow the [json-schema spec](https://json-schema.org/draft/2
 It is also possible to refer to schemata, e.g. `{"$ref": "urn:samshee:illuminav2/v1"}` is equivalent to passing `illuminasamplesheetv2schema` for validating against the built-in schema. For referencing an externally hosted schema, use resolvable URLs, e.g. `{"$ref": "https://dataportal.lit.eu/schemas/litngscoresamplesheet/v0.1/litngscoresamplesheet.schema.json"}` will check against the schema that we use in the LIT NGS Core.
 
 ## Commandline tool
-Samshee comes with a simple command line tool that does nothing more than reading a sectioned sheet (either in normal text or json form), possibly validates it and prints it. This can be used for linting, format conversions or validating sheets on the command line.
+Samshee comes with a simple command line tool that does nothing more than (1) reading a sectioned sheet (either in normal text or json form), (2) possibly validates it and (3) prints it. This can be used for linting, format conversions or validating sheets on the command line.
 
-## in- and output
+### in- and output
 
 The output is always printed to stdout that can be redirected to a file. If the input sheet should be read from stdin, the special filename `-` must be used:
 
@@ -141,7 +141,18 @@ cat test.csv | python -m samshee -
 python -m samshee test.csv
 ```
 
-## Converting between formats
+### Return codes
+If no errors occur, samshee will exit with exit code `0` and print the sheet in the desired output. If any of the steps produces an error, the return indicates which step generated the error:
+
+| exit code | cause                                                                                             |
+|-----------|---------------------------------------------------------------------------------------------------|
+| `1`       | error reading the input sheet                                                                     |
+| `2`       | validation error (with explicit validation rules, e.g. `--schema`)                                |
+| `3`       | unknown input or output format. Check `--help`                                                    |
+| `4`       | error during output generation (may be validation error if the output format requires validation) |
+
+
+### Converting between formats
 
 To convert a sample sheet to json, simply specify the output format:
 ``` bash
@@ -155,12 +166,20 @@ python -m samshee --output-format json test.csv | jq '.["Reads"]["Read1Cycles"]+
 # will print the total read length (without indices)
 ```
 
+Supported formats are the following:
+
+| format      | input       | output      | description                                                              |
+|-------------|-------------|-------------|--------------------------------------------------------------------------|
+| `sectioned` | ✓ (default) | ✓           | Sectioned format (see above), common to v1 and v2 samplesheets.          |
+| `v2`        | ✗           | ✓ (default) | Sectioned format that requires successful validation for v2 samplesheets |
+| `json`      | ✓           | ✓           | machine readable json format                                             |
+
 If the input is not a sectioned sheet, but a json file (to convert back), this must be stated explicitly as well:
 ``` bash
 python -m samshee --input-format json test.json
 ```
 
-## Schema validation
+### Schema validation
 Samshee allows to validate against an external (json) schema given as argument, e.g., to check if there is a section `Data`, one could do
 ``` bash
 python -m samshee --schema '{"requires": ["Data"]}' test.csv
