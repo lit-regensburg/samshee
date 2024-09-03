@@ -142,7 +142,7 @@ python -m samshee test.csv
 ```
 
 ### Return codes
-If no errors occur, samshee will exit with exit code `0` and print the sheet in the desired output. If any of the steps produces an error, the return indicates which step generated the error:
+If no errors occur, samshee will exit with exit code `0` and print the sheet in the desired output. If any of the steps produces an error, the return code indicates which step generated the error:
 
 | exit code | cause                                                                                             |
 |-----------|---------------------------------------------------------------------------------------------------|
