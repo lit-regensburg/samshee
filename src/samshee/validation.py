@@ -16,21 +16,18 @@ from referencing.exceptions import NoSuchResource
 from urllib.parse import urlsplit
 from pathlib import Path
 
-def retrieve(uri: str):
+@referencing.retrieval.to_cached_resource()
+def retrieve_cached(uri: str):
     parsed = urlsplit(uri)
     if parsed.scheme == "http" or parsed.scheme == "https":
         resp = requests.get(uri)
-        res = Resource.from_contents(resp.json())
-        return res
+        return resp.text
     elif parsed.scheme == "file":
-        contents = json.loads(Path(parsed.path).read_text())
-        res = Resource.from_contents(contents)
-        return res
+        return Path(parsed.path).read_text()
     else:
         raise NoSuchResource(ref=uri)
 
-
-registry = Registry(retrieve=retrieve)
+registry = Registry(retrieve=retrieve_cached)
 
 
 #
