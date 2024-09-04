@@ -182,21 +182,45 @@ python -m samshee --input-format json test.json
 ### Schema validation
 Samshee allows to validate against an external (json) schema given as argument, e.g., to check if there is a section `Data`, one could do
 ``` bash
-python -m samshee --schema '{"requires": ["Data"]}' test.csv
+python -m samshee --schema '{"required": ["Data"]}' test.csv
 ```
 
 Note that this does **not** bypass any validation that is done during printing the output, e.g., if the output prints to a v2 samplesheet (the default), the schema `urn:samshee:illuminav2/v1` is checked regardless of the schema option. To circumvent this, explicitly state `sectioned` as output format (which is not validated):
 ``` bash
-python -m samshee --schema '{"requires": ["Data"]}' --output-format sectioned test.csv
+python -m samshee --schema '{"required": ["Data"]}' --output-format sectioned test.csv
 ```
 
 Several schemas can simply be chained:
 ``` bash
-python -m samshee --schema '{"$ref": "urn:samshee:illuminav2/v1"}' --schema '{"requires": ["BCLConvert_Data"]}' --output-format sectioned test.csv
+python -m samshee --schema '{"$ref": "urn:samshee:illuminav2/v1"}' --schema '{"required": ["BCLConvert_Data"]}' --output-format sectioned test.csv
 ```
 This example will first check if the illuminav2 schema is fulfilled and then if a `BCLConvert_Data` section is present.
 
+#### Schema files
+
+The `--schema` option only accepts json schema input, but no file names. To read from a json schema file, the file has to be referenced (and specify its schema definition). For example, we could have a schema file `test.schema.json` that checks for the presence of `RunName` in the `Header` section:
+
+``` json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+     "Header": {
+        "type": "object",
+        "required": ["RunName"]
+     }
+  }
+}
+```
+
+To use this schema, we have to reference it in the samshee call:
+``` bash
+python -m samshee --schema '{"$ref": "file:./test.schema.json"}' test.csv
+```
+
+#### Remote schemas
+
 Schema definitions can also be retrieved automatically from a remote URL. The following example will check if the test sheet is a v2 sample sheet (because it is the default output) that also fulfills conventions in place at the NGS Core of the [LIT](https://lit.eu):
+
 ``` bash
 python -m samshee --schema '{"$ref": "https://dataportal.lit.eu/schemas/litngscoresamplesheet/v0.1/litngscoresamplesheet.schema.json"}' test.csv
 ```

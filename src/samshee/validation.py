@@ -2,6 +2,8 @@ import itertools
 import re
 from typing import Callable, cast, Mapping, Tuple, Optional
 
+import json
+
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ErrorTree, best_match
 
@@ -10,14 +12,25 @@ from samshee.sectionedsheet import SectionedSheet, Settings, Data
 from referencing import Registry, Resource
 import requests
 import referencing.retrieval
+from referencing.exceptions import NoSuchResource
+from urllib.parse import urlsplit
+from pathlib import Path
+
+def retrieve(uri: str):
+    parsed = urlsplit(uri)
+    if parsed.scheme == "http" or parsed.scheme == "https":
+        resp = requests.get(uri)
+        res = Resource.from_contents(resp.json())
+        return res
+    elif parsed.scheme == "file":
+        contents = json.loads(Path(parsed.path).read_text())
+        res = Resource.from_contents(contents)
+        return res
+    else:
+        raise NoSuchResource(ref=uri)
 
 
-@referencing.retrieval.to_cached_resource()
-def cached_retrieve_via_http(uri):
-    return requests.get(uri).text
-
-
-registry = Registry(retrieve=cached_retrieve_via_http)
+registry = Registry(retrieve=retrieve)
 
 
 #
