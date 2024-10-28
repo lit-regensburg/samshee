@@ -16,7 +16,9 @@ class Settings(OrderedDict[str, ValueType]):
 
     def __init__(self, init=OrderedDict()) -> None:
         assert isinstance(init, dict), "Settings: init argument is not a dict"
-        assert all([not isinstance(o, dict) for o in init.values()]), "Settings: init argument does contain dicts (only simple values allowed)"
+        assert all(
+            [not isinstance(o, dict) for o in init.values()]
+        ), "Settings: init argument does contain dicts (only simple values allowed)"
         super().__init__(init)
 
     def __str__(self) -> str:
@@ -48,19 +50,23 @@ class Data(list[dict]):
             writer.writerow(row)
         return res.getvalue() + "\n\n"
 
+
 class Array(list[ValueType]):
     """A type that stores an array of values (e.g. sample sheet v1 Settings sections)"""
+
     def __init__(self, init=list()) -> None:
         if len(init) > 0:
             dtype = type(init[0])
-            assert all([isinstance(o, dtype) for o in init]), "Array: Array is not uniformly typed (mixed data types)"
+            assert all(
+                [isinstance(o, dtype) for o in init]
+            ), "Array: Array is not uniformly typed (mixed data types)"
         super().__init__(init)
 
     def __str__(self) -> str:
         res = ""
         for value in self:
             if isinstance(value, str):
-                res += f"\"{value}\"\n"
+                res += f'"{value}"\n'
             else:
                 res += f"{value}\n"
         res += "\n\n"
@@ -112,24 +118,27 @@ def parse_value(contents: str) -> ValueType:
 
 def parse_settings(contents: str) -> Settings:
     """parses a string to a settings section (a key-value store)"""
-    peaker, reader = itertools.tee(csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"'))
+    peaker, reader = itertools.tee(
+        csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
+    )
     # get number of columns
     ncols = len([field for field in next(peaker) if field != ""])
     del peaker
 
     if ncols != 2:
-        raise ValueError("string cannot be parsed into Settings, because it is not a two-columns section.")
+        raise ValueError(
+            "string cannot be parsed into Settings, because it is not a two-columns section."
+        )
 
     d = Settings(
-        OrderedDict([
-            (row[0], parse_value(row[1]))
-            for row in reader if row[0] != ""
-        ])
+        OrderedDict([(row[0], parse_value(row[1])) for row in reader if row[0] != ""])
     )
     if len(d) == 0:
         raise ValueError("string cannot be parsed to Settings")
 
     return d
+
+
 #
 #   for i, line in enumerate(contents.split("\n")):
 #       unpacked = line.rstrip(",").split(",")
@@ -149,13 +158,17 @@ def parse_settings(contents: str) -> Settings:
 
 def parse_data(contents: str) -> Data:
     """parses a string to a Data section, i.e. reads the section as named csv (first row is a header row)"""
-    reader = csv.DictReader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
+    reader = csv.DictReader(
+        StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"'
+    )
     # skip empty rows
     d = Data(
         [
             row
             for row in reader
-            if not all([row[i] is None or len(row[i]) == 0 for i in row.keys()]) # and not any([key == '' for key in row.keys()])
+            if not all(
+                [row[i] is None or len(row[i]) == 0 for i in row.keys()]
+            )  # and not any([key == '' for key in row.keys()])
         ]
     )
     # remove fields that have an empty name (e.g. from trailing commas at line end):
@@ -163,23 +176,26 @@ def parse_data(contents: str) -> Data:
         print(d)
         print(contents.lstrip("\n\r "))
         raise ValueError("no content in Data Section")
-    if len(d[0].keys()) < 2:
-        raise ValueError("A Data section must have at least two fields (else it may be a settings section)")
     empty_fields = [x for x in d[0].keys() if re.match(r"^\s*$", x)]
     for e in d:
         for field in empty_fields:
             del e[field]
     return d
 
+
 def parse_array(contents: str) -> Array:
     """parses an Array section, i.e. every line is one value, no header, other fields are ignored"""
-    peaker, reader = itertools.tee(csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"'))
+    peaker, reader = itertools.tee(
+        csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
+    )
     # get number of columns
     ncols = len([field for field in next(peaker) if field != ""])
     del peaker
 
     if ncols != 1:
-        raise ValueError("string cannot be parsed into Array, because it is not a single column section.")
+        raise ValueError(
+            "string cannot be parsed into Array, because it is not a single column section."
+        )
 
     is_header_re = re.compile(r"^\[.*\]$")
     d = Array(
@@ -190,6 +206,7 @@ def parse_array(contents: str) -> Array:
         ]
     )
     return d
+
 
 def parse_anything(sectionname: str, contents: str) -> ValueType:
     """parses an section and tries to guess the section type.
@@ -216,9 +233,7 @@ def parse_anything(sectionname: str, contents: str) -> ValueType:
         raise ValueError("Cannot guess section type")
 
 
-def parse_sectionedsheet(
-    contents: str
-) -> SectionedSheet:
+def parse_sectionedsheet(contents: str) -> SectionedSheet:
     """parses string to a SectionedSheet, i.e. to an ordered dict of sections.
     by default, sections that are named "header" or "reads", or are suffixed "settings" are assumed to be settings sections.
     All others will be parsed as data sections
@@ -239,6 +254,7 @@ def read_sectionedsheet(file: Union[Path, str, IOBase]) -> SectionedSheet:
     with open(file, "r") as f:
         return parse_sectionedsheet(f.read())
 
+
 def guess_section_from_object(obj: dict) -> ValueType:
     try:
         return Settings(obj)
@@ -253,9 +269,8 @@ def guess_section_from_object(obj: dict) -> ValueType:
     except:
         raise ValueError("Cannot guess section type")
 
-def parse_sectionedsheet_from_json(
-    jsonstr: str
-) -> SectionedSheet:
+
+def parse_sectionedsheet_from_json(jsonstr: str) -> SectionedSheet:
     """parses a json string to a SectionedSheet"""
     a = json.loads(jsonstr, object_pairs_hook=OrderedDict)
     for k in a.keys():
