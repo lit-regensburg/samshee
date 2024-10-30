@@ -8,6 +8,18 @@ A schema-agnostic parser and writer for illumina® sample sheets v2 and similar 
 - encoding to and parsing from json
 - customizable validation, ships with a default validation schema that follows illumina® specs
 
+## Installation
+
+Samshee is on [pypi](https://pypi.org/project/samshee/), so you can simply
+```
+pip install samshee
+```
+
+For development, clone the repository and
+```
+pip install -e .
+```
+
 ## Examples
 
 ### Reading, modifying and writing
