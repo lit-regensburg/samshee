@@ -50,7 +50,9 @@ illuminasamplesheetv2schema = {
                 "RunName": {
                     "type": "string",
                     "pattern": r"^[-a-zA-Z0-9_\.]*$",
-                    "description": "Unique run name of your preference. The RunName can contain alphanumeric characters, underscores, dashes, and periods. If the RunName contains spaces or special characters, analysis fails.",
+                    "description": "Unique run name of your preference. The RunName can contain alphanumeric "
+                                   "characters, underscores, dashes, and periods. If the RunName contains spaces "
+                                   "or special characters, analysis fails.",
                 },
                 "RunDescription": {
                     "type": "string",
@@ -75,22 +77,33 @@ illuminasamplesheetv2schema = {
                 "Read1Cycles": {
                     "type": "integer",
                     "minimum": 1,
-                    "description": "Number of cycles in the first read. Ideally, this value should be 26 or greater. However, you can proceed with fewer cycles. If OverrideCycles is present in the [BCLConvert_Settings] section, this value must be consistent with the sum of the Read1 section of OverrideCycles.",
+                    "description": "Number of cycles in the first read. Ideally, this value should be 26 or greater. "
+                                   "However, you can proceed with fewer cycles. If OverrideCycles is present in the "
+                                   "[BCLConvert_Settings] section, this value must be consistent with the sum of the "
+                                   "Read1 section of OverrideCycles.",
                 },
                 "Read2Cycles": {
                     "type": "integer",
                     "minimum": 1,
-                    "description": "Number of cycles in the second read. Required when running a paired-end sequencing run. Required if Custom Read 2 Primer is set to true on the UI. If OverrideCycles is present in the [BCLConvert_Settings] section, this value must be consistent with the sum of the Read 2 section of OverrideCycles. Ideally, this value should be 26 or greater. However, you can proceed with fewer cycles.",
+                    "description": "Number of cycles in the second read. Required when running a paired-end sequencing "
+                                   "run. Required if Custom Read 2 Primer is set to true on the UI. If OverrideCycles "
+                                   "is present in the [BCLConvert_Settings] section, this value must be consistent with"
+                                   " the sum of the Read 2 section of OverrideCycles. Ideally, this value should be 26 "
+                                   "or greater. However, you can proceed with fewer cycles.",
                 },
                 "Index1Cycles": {
                     "type": "integer",
                     "minimum": 1,
-                    "description": "Number of cycles in the first Index Read. Required when sequencing more than one sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this value must be consistent with the sum of the Index 1 section of OverrideCycles.",
+                    "description": "Number of cycles in the first Index Read. Required when sequencing more than one "
+                                   "sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this "
+                                   "value must be consistent with the sum of the Index 1 section of OverrideCycles.",
                 },
                 "Index2Cycles": {
                     "type": "integer",
                     "minimum": 1,
-                    "description": "Number of cycles in the first Index Read. Required when sequencing more than one sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this value must be consistent with the sum of the Index 2 section of OverrideCycles.",
+                    "description": "Number of cycles in the first Index Read. Required when sequencing more than one "
+                                   "sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this "
+                                   "value must be consistent with the sum of the Index 2 section of OverrideCycles.",
                 },
             },
         },
@@ -111,26 +124,30 @@ illuminasamplesheetv2schema = {
                 "AdapterRead1": {
                     "type": "string",
                     "pattern": r"^[ACGT]+",
-                    "description": "The sequence to trim or mask from the end of Read 1. AdapterRead1 trims cycles by default. Value must be <= Read1Cycles.",
+                    "description": "The sequence to trim or mask from the end of Read 1. AdapterRead1 trims cycles by "
+                                   "default. Value must be <= Read1Cycles.",
                 },
                 "AdapterRead2": {
                     "type": "string",
                     "pattern": r"^[ACGT]+",
-                    "description": "The sequence to trim or mask from the end of Read 2. AdapterRead2 trims cycles by default. Value must be <= Read2Cycles.",
+                    "description": "The sequence to trim or mask from the end of Read 2. AdapterRead2 trims cycles "
+                                   "by default. Value must be <= Read2Cycles.",
                 },
                 "BarcodeMismatchesIndex1": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 2,
                     "default": 1,
-                    "description": "The number of allowed mismatches between the first Index Read and index sequence. Only required if Index1Cycles is specified.",
+                    "description": "The number of allowed mismatches between the first Index Read and index sequence. "
+                                   "Only required if Index1Cycles is specified.",
                 },
                 "BarcodeMismatchesIndex2": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 2,
                     "default": 1,
-                    "description": "The number of allowed mismatches between the first Index Read and index sequence. Only required if Index2Cycles is specified.",
+                    "description": "The number of allowed mismatches between the first Index Read and index sequence. "
+                                   "Only required if Index2Cycles is specified.",
                 },
                 "FastqCompressionFormat": {
                     "type": "string",
@@ -144,27 +161,33 @@ illuminasamplesheetv2schema = {
                     "type": "string",
                     "pattern": r"^[0-9]+\.[0-9]+.*",
                 },
-            },
-            "BCLConvert_Data": {
+            }
+        },
+        "BCLConvert_Data": {
+            "type": "array",
+            "items": {
                 "type": "object",
                 "required": ["Sample_ID"],
                 "properties": {
                     "Sample_ID": {
                         "type": "string",
                         "pattern": r"^[a-zA-Z0-9\-_]+$",
-                        "maxLength": 20,
+                        "maxLength": 40,
                         "description": "The ID of the sample. Separate each identifier with a dash or underscore.",
                         "examples": ["Sample1-DQB1-022515"],
                     },
                     "Index": {
                         "type": "string",
                         "pattern": r"^[ACTG]+$",
-                        "description": "The index sequence associated with the sample. Required when sequencing more than one sample.",
+                        "description": "The index sequence associated with the sample. "
+                                       "Required when sequencing more than one sample.",
                     },
                     "Index2": {
                         "type": "string",
                         "pattern": r"^[ACTG]+$",
-                        "description": "The second index sequence associated with the sample. Make sure the second index (i5) adapter sequences are in forward orientation. DRAGEN automatically reverse complements i5 indexes during secondary analysis.",
+                        "description": "The second index sequence associated with the sample. Make sure the second "
+                                       "index (i5) adapter sequences are in forward orientation. DRAGEN automatically "
+                                       "reverse complements i5 indexes during secondary analysis.",
                     },
                     "Lane": {
                         "type": "integer",
