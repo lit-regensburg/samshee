@@ -6,7 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "samshee"
 version = "0.2.1"
 authors = [
-  { name="Jakob Simeth", email="jakob.simeth@ukr.de" }
+  { name="Jakob Simeth", email="jakob.simeth@ukr.de" },
+  { name="Matthew Lueder", email="luederm@chop.edu" }
 ]
 description="A schema-agnostic parser and writer for illumina sample sheets v2."
 readme = "README.md"

@@ -103,17 +103,25 @@ class SectionedSheet(OrderedDict[str, Section]):
             return json.dumps(self)
 
 
+def attempt_cast(value: str) -> ValueType:
+    try:
+        return int(value)
+    except:
+        pass
+    try:
+        return float(value)
+    except:
+        pass
+    return value
+
+
 def parse_value(contents: str) -> ValueType:
     """parses a string to an admissible value in a settings section"""
-    try:
-        return int(contents)
-    except:
-        pass
-    try:
-        return float(contents)
-    except:
-        pass
-    return contents.replace('"', "")
+    value = attempt_cast(contents)
+    if isinstance(value, str):
+        return contents.replace('"', "")
+    else:
+        return value
 
 
 def parse_settings(contents: str) -> Settings:
@@ -180,6 +188,11 @@ def parse_data(contents: str) -> Data:
     for e in d:
         for field in empty_fields:
             del e[field]
+
+    # Cast values that look like int/float from string
+    for item in d:
+        item.update((k, attempt_cast(v)) for k, v in item.items())
+
     return d
 
 
