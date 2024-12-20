@@ -6,6 +6,7 @@ from io import StringIO, IOBase, TextIOWrapper, TextIOBase
 import csv
 import json
 import itertools
+import shlex
 
 """A simple value type."""
 ValueType: TypeAlias = Union[str, int, float, bool]
@@ -24,7 +25,10 @@ class Settings(OrderedDict[str, ValueType]):
     def __str__(self) -> str:
         res = ""
         for key, value in self.items():
-            res += f"{key},{value}\n"
+            if isinstance(value, str):
+                res += f"{key},\"{value.replace("\"", "\\\"")}\"\n"
+            else:
+                res += f"{key},{str(value)}\n"
         res += "\n\n"
         return res
 
@@ -129,7 +133,11 @@ def parse_settings(contents: str) -> Settings:
     if contents.lstrip("\n\r ") == "":
         return Settings()
     peaker, reader = itertools.tee(
-        csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
+        csv.reader(
+            StringIO(contents.lstrip("\n\r ").replace("'", '"')),
+            delimiter=",",
+            quotechar='"',
+        )
     )
     # get number of columns
     ncols = len([field for field in next(peaker) if field != ""])
