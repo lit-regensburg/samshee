@@ -126,24 +126,24 @@ def parse_value(contents: str) -> ValueType:
 
 def parse_settings(contents: str) -> Settings:
     """parses a string to a settings section (a key-value store)"""
+    if contents.lstrip("\n\r ") == "":
+        return Settings()
     peaker, reader = itertools.tee(
         csv.reader(StringIO(contents.lstrip("\n\r ")), delimiter=",", quotechar='"')
     )
     # get number of columns
     ncols = len([field for field in next(peaker) if field != ""])
     del peaker
-
     if ncols != 2:
         raise ValueError(
             "string cannot be parsed into Settings, because it is not a two-columns section."
         )
 
     d = Settings(
-        OrderedDict([(row[0], parse_value(row[1])) for row in reader if row[0] != ""])
+        OrderedDict(
+            [(str(row[0]), parse_value(row[1])) for row in reader if row[0] != ""]
+        )
     )
-    if len(d) == 0:
-        raise ValueError("string cannot be parsed to Settings")
-
     return d
 
 
@@ -181,8 +181,6 @@ def parse_data(contents: str) -> Data:
     )
     # remove fields that have an empty name (e.g. from trailing commas at line end):
     if len(d) < 1:
-        print(d)
-        print(contents.lstrip("\n\r "))
         raise ValueError("no content in Data Section")
     empty_fields = [x for x in d[0].keys() if re.match(r"^\s*$", x)]
     for e in d:
@@ -254,7 +252,10 @@ def parse_sectionedsheet(contents: str) -> SectionedSheet:
     _section_pattern = re.compile(r"\[(\w*)\][^\n]*\n([^\[]*)")
     res = SectionedSheet(OrderedDict())
     for name, content in re.findall(_section_pattern, contents):
-        res[name] = parse_anything(name, content.rstrip("\n "))
+        try:
+            res[name] = parse_anything(name, content.rstrip("\n "))
+        except Exception as exc:
+            raise Exception(f"Error parsing section {name}: {exc}")
     return res
 
 
