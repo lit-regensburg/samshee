@@ -6,7 +6,6 @@ from io import StringIO, IOBase, TextIOWrapper, TextIOBase
 import csv
 import json
 import itertools
-import shlex
 
 """A simple value type."""
 ValueType: TypeAlias = Union[str, int, float, bool]
