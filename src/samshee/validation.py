@@ -16,6 +16,7 @@ from referencing.exceptions import NoSuchResource
 from urllib.parse import urlsplit
 from pathlib import Path
 
+
 @referencing.retrieval.to_cached_resource()
 def retrieve_cached(uri: str):
     parsed = urlsplit(uri)
@@ -26,6 +27,7 @@ def retrieve_cached(uri: str):
         return Path(parsed.path).read_text()
     else:
         raise NoSuchResource(ref=uri)
+
 
 registry = Registry(retrieve=retrieve_cached)
 
@@ -51,8 +53,8 @@ illuminasamplesheetv2schema = {
                     "type": "string",
                     "pattern": r"^[-a-zA-Z0-9_\.]*$",
                     "description": "Unique run name of your preference. The RunName can contain alphanumeric "
-                                   "characters, underscores, dashes, and periods. If the RunName contains spaces "
-                                   "or special characters, analysis fails.",
+                    "characters, underscores, dashes, and periods. If the RunName contains spaces "
+                    "or special characters, analysis fails.",
                 },
                 "RunDescription": {
                     "type": "string",
@@ -78,32 +80,32 @@ illuminasamplesheetv2schema = {
                     "type": "integer",
                     "minimum": 1,
                     "description": "Number of cycles in the first read. Ideally, this value should be 26 or greater. "
-                                   "However, you can proceed with fewer cycles. If OverrideCycles is present in the "
-                                   "[BCLConvert_Settings] section, this value must be consistent with the sum of the "
-                                   "Read1 section of OverrideCycles.",
+                    "However, you can proceed with fewer cycles. If OverrideCycles is present in the "
+                    "[BCLConvert_Settings] section, this value must be consistent with the sum of the "
+                    "Read1 section of OverrideCycles.",
                 },
                 "Read2Cycles": {
                     "type": "integer",
                     "minimum": 1,
                     "description": "Number of cycles in the second read. Required when running a paired-end sequencing "
-                                   "run. Required if Custom Read 2 Primer is set to true on the UI. If OverrideCycles "
-                                   "is present in the [BCLConvert_Settings] section, this value must be consistent with"
-                                   " the sum of the Read 2 section of OverrideCycles. Ideally, this value should be 26 "
-                                   "or greater. However, you can proceed with fewer cycles.",
+                    "run. Required if Custom Read 2 Primer is set to true on the UI. If OverrideCycles "
+                    "is present in the [BCLConvert_Settings] section, this value must be consistent with"
+                    " the sum of the Read 2 section of OverrideCycles. Ideally, this value should be 26 "
+                    "or greater. However, you can proceed with fewer cycles.",
                 },
                 "Index1Cycles": {
                     "type": "integer",
                     "minimum": 1,
                     "description": "Number of cycles in the first Index Read. Required when sequencing more than one "
-                                   "sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this "
-                                   "value must be consistent with the sum of the Index 1 section of OverrideCycles.",
+                    "sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this "
+                    "value must be consistent with the sum of the Index 1 section of OverrideCycles.",
                 },
                 "Index2Cycles": {
                     "type": "integer",
                     "minimum": 1,
                     "description": "Number of cycles in the first Index Read. Required when sequencing more than one "
-                                   "sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this "
-                                   "value must be consistent with the sum of the Index 2 section of OverrideCycles.",
+                    "sample. If OverrideCycles is present in the [BCLConvert_Settings] section, this "
+                    "value must be consistent with the sum of the Index 2 section of OverrideCycles.",
                 },
             },
         },
@@ -125,13 +127,13 @@ illuminasamplesheetv2schema = {
                     "type": "string",
                     "pattern": r"^[ACGT]+",
                     "description": "The sequence to trim or mask from the end of Read 1. AdapterRead1 trims cycles by "
-                                   "default. Value must be <= Read1Cycles.",
+                    "default. Value must be <= Read1Cycles.",
                 },
                 "AdapterRead2": {
                     "type": "string",
                     "pattern": r"^[ACGT]+",
                     "description": "The sequence to trim or mask from the end of Read 2. AdapterRead2 trims cycles "
-                                   "by default. Value must be <= Read2Cycles.",
+                    "by default. Value must be <= Read2Cycles.",
                 },
                 "BarcodeMismatchesIndex1": {
                     "type": "integer",
@@ -139,7 +141,7 @@ illuminasamplesheetv2schema = {
                     "maximum": 2,
                     "default": 1,
                     "description": "The number of allowed mismatches between the first Index Read and index sequence. "
-                                   "Only required if Index1Cycles is specified.",
+                    "Only required if Index1Cycles is specified.",
                 },
                 "BarcodeMismatchesIndex2": {
                     "type": "integer",
@@ -147,7 +149,7 @@ illuminasamplesheetv2schema = {
                     "maximum": 2,
                     "default": 1,
                     "description": "The number of allowed mismatches between the first Index Read and index sequence. "
-                                   "Only required if Index2Cycles is specified.",
+                    "Only required if Index2Cycles is specified.",
                 },
                 "FastqCompressionFormat": {
                     "type": "string",
@@ -161,7 +163,7 @@ illuminasamplesheetv2schema = {
                     "type": "string",
                     "pattern": r"^[0-9]+\.[0-9]+.*",
                 },
-            }
+            },
         },
         "BCLConvert_Data": {
             "type": "array",
@@ -180,14 +182,14 @@ illuminasamplesheetv2schema = {
                         "type": "string",
                         "pattern": r"^[ACTG]+$",
                         "description": "The index sequence associated with the sample. "
-                                       "Required when sequencing more than one sample.",
+                        "Required when sequencing more than one sample.",
                     },
                     "Index2": {
                         "type": "string",
                         "pattern": r"^[ACTG]+$",
                         "description": "The second index sequence associated with the sample. Make sure the second "
-                                       "index (i5) adapter sequences are in forward orientation. DRAGEN automatically "
-                                       "reverse complements i5 indexes during secondary analysis.",
+                        "index (i5) adapter sequences are in forward orientation. DRAGEN automatically "
+                        "reverse complements i5 indexes during secondary analysis.",
                     },
                     "Lane": {
                         "type": "integer",
@@ -301,6 +303,10 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
     """
     cycles: dict[str, str] = {}
     if "BCLConvert_Settings" in doc:
+        if not "BCLConvert_Data" in doc:
+            raise Exception(
+                "BCLConvert: Only Settings section is present, but BCLConvert_Data is missing."
+            )
         convertsettings = cast(Settings, doc["BCLConvert_Settings"])
         readsettings = cast(Settings, doc["Reads"])
         if "OverrideCycles" in convertsettings:
@@ -352,6 +358,10 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
         # "BarcodeMismatchesIndex[12]: Only required if Index[12]Cycles is specified."
         # but this conflicts with a default value of 1.
     if "BCLConvert_Data" in doc:
+        if not "BCLConvert_Settings" in doc:
+            raise Exception(
+                "BCLConvert: Only Data section is present, but BCLConvert_Settings is missing."
+            )
         # Sample_ID do not need to be unique?!
         convertdata = cast(Data, doc["BCLConvert_Data"])
         if len(convertdata) > 1:
@@ -505,9 +515,12 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
             ]
 
             mismatches = [
-                cast(int, cast(Settings, doc["BCLConvert_Settings"])[mismatchname])
-                if mismatchname in doc["BCLConvert_Settings"]
-                else 1
+                (
+                    cast(int, cast(Settings, doc["BCLConvert_Settings"])[mismatchname])
+                    if "BCLConvert_Settings" in doc
+                    and mismatchname in doc["BCLConvert_Settings"]
+                    else 1
+                )
                 for mismatchname in mismatchnames
             ]
 
