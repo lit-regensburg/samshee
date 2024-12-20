@@ -1,0 +1,19 @@
+[Header]
+FileFormatVersion,2
+RunName,name123456
+InstrumentPlatform,NovaSeq
+operator,personname
+
+[Reads]
+Read1Cycles,100
+Read2Cycles,100
+Index1Cycles,10
+Index2Cycles,10
+
+[Sequencing_Settings]
+LibraryPrepKits,"QIAseq miRNA Library Kit"
+
+[BCLConvert_Data]
+Sample_ID,Index,Index2,Index name
+sample1,TGAACGTTGT,AGTCGGCCAT,xxx
+sample2,ACTGGCGAAC,TCGACTTATC,yyy
