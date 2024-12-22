@@ -25,7 +25,7 @@ class Settings(OrderedDict[str, ValueType]):
         res = ""
         for key, value in self.items():
             if isinstance(value, str):
-                res += f"{key},\"{value.replace("\"", "\\\"")}\"\n"
+                res += f"{key},\"{value.replace('\"', '\\\"')}\"\n"
             else:
                 res += f"{key},{str(value)}\n"
         res += "\n\n"
