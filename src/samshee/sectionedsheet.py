@@ -25,7 +25,7 @@ class Settings(OrderedDict[str, ValueType]):
         res = ""
         res = StringIO("")
         writer = csv.DictWriter(
-            res, fieldnames=["key", "value"], delimiter=",", quoting=csv.QUOTE_STRINGS
+            res, fieldnames=["key", "value"], delimiter=",", quoting=csv.QUOTE_MINIMAL
         )
         for k, v in self.items():
             writer.writerow({"key": k, "value": v})
@@ -48,7 +48,7 @@ class Data(list[dict]):
         # currently, we have \r\n as lineterminator
         # this conflicts with terminators in other sections.
         writer = csv.DictWriter(
-            res, delimiter=",", fieldnames=fieldnames, quoting=csv.QUOTE_STRINGS
+            res, delimiter=",", fieldnames=fieldnames, quoting=csv.QUOTE_MINIMAL
         )
         writer.writeheader()
         for row in self:
@@ -134,7 +134,7 @@ def parse_settings(contents: str) -> Settings:
             StringIO(contents.lstrip("\n\r ")),
             delimiter=",",
             quotechar='"',
-            quoting=csv.QUOTE_STRINGS,
+            quoting=csv.QUOTE_MINIMAL,
         )
     )
     # get number of columns
