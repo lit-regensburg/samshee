@@ -23,13 +23,13 @@ class Settings(OrderedDict[str, ValueType]):
 
     def __str__(self) -> str:
         res = ""
-        for key, value in self.items():
-            if isinstance(value, str):
-                res += f"{key},\"{value.replace('\"', '\\\"')}\"\n"
-            else:
-                res += f"{key},{str(value)}\n"
-        res += "\n\n"
-        return res
+        res = StringIO("")
+        writer = csv.DictWriter(
+            res, fieldnames=["key", "value"], delimiter=",", quoting=csv.QUOTE_STRINGS
+        )
+        for k, v in self.items():
+            writer.writerow({"key": k, "value": v})
+        return str(res.getvalue() + "\n\n")
 
 
 class Data(list[dict]):
@@ -47,7 +47,9 @@ class Data(list[dict]):
         # TODO may specify a dialect.
         # currently, we have \r\n as lineterminator
         # this conflicts with terminators in other sections.
-        writer = csv.DictWriter(res, delimiter=",", fieldnames=fieldnames)
+        writer = csv.DictWriter(
+            res, delimiter=",", fieldnames=fieldnames, quoting=csv.QUOTE_STRINGS
+        )
         writer.writeheader()
         for row in self:
             writer.writerow(row)
@@ -120,11 +122,7 @@ def attempt_cast(value: str) -> ValueType:
 
 def parse_value(contents: str) -> ValueType:
     """parses a string to an admissible value in a settings section"""
-    value = attempt_cast(contents)
-    if isinstance(value, str):
-        return contents.replace('"', "")
-    else:
-        return value
+    return attempt_cast(contents)
 
 
 def parse_settings(contents: str) -> Settings:
@@ -133,9 +131,10 @@ def parse_settings(contents: str) -> Settings:
         return Settings()
     peaker, reader = itertools.tee(
         csv.reader(
-            StringIO(contents.lstrip("\n\r ").replace("'", '"')),
+            StringIO(contents.lstrip("\n\r ")),
             delimiter=",",
             quotechar='"',
+            quoting=csv.QUOTE_STRINGS,
         )
     )
     # get number of columns
