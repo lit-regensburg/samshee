@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "samshee"
-version = "0.2.7"
+dynamic = ["version"]
 authors = [
   { name="Jakob Simeth", email="jakob.simeth@ukr.de" },
   { name="Matthew Lueder", email="luederm@chop.edu" }
@@ -33,3 +33,5 @@ dependencies = [
 
 [tool.pytest.ini_options]
 pythonpath = "src"
+
+[tool.setuptools_scm]
