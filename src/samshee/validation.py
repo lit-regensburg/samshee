@@ -239,6 +239,9 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
             res += letter * int(freq)
         return res
 
+    def is_read(s: str) -> bool:
+        return "Y" in s
+
     def is_read_or_umi(s: str) -> bool:
         return ("Y" in s) or ("U" in s)
 
@@ -283,11 +286,11 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
         raise Exception(
             f"Read2Cycles entry in OverrideCycles is not a read: {res['Read2Cycles']}"
         )
-    if ("Index1Cycles" in res) and (is_read_or_umi(res["Index1Cycles"])):
+    if ("Index1Cycles" in res) and (is_read(res["Index1Cycles"])):
         raise Exception(
             f"Index1Cycles entry in OverrideCycles contains reads: {res['Index1Cycles']}"
         )
-    if ("Index2Cycles" in res) and (is_read_or_umi(res["Index2Cycles"])):
+    if ("Index2Cycles" in res) and (is_read(res["Index2Cycles"])):
         raise Exception(
             f"Index2Cycles entry in OverrideCycles contains reads: {res['Index2Cycles']}"
         )
