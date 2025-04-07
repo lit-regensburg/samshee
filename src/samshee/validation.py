@@ -657,19 +657,32 @@ def validate(
                     f"anonymous validator / schema #{i} is not a schema or is not callable."
                 )
 
+    def rewrite_some_errors(message) -> str:
+        print(message)
+        message = re.sub(
+            r"(.*)does not match '\^\[\\x00-\\x7f\]\*\$",
+            r"\1contains non-ASCII characters.",
+            message,
+        )
+        # may add more such rewrites...
+        return message
+
     for i, schema in enumerate(validation):
         if isinstance(schema, dict):
             name = f"validator #{i} ({schema})"
             v = Draft202012Validator(schema, registry=registry).iter_errors(doc)
             errs = []
+
             for err in v:
                 errs.append((err.json_path, err.message))
             if len(errs) == 1:
                 raise Exception(
-                    f"{name} raised validation error: {errs[0][0]}: {errs[0][1]}"
+                    f"{name} raised validation error: {errs[0][0]}: {rewrite_some_errors(errs[0][1])}"
                 )
             elif len(errs) > 1:
-                msg = "\n".join(["- " + e[0] + ": " + e[1] for e in errs])
+                msg = "\n".join(
+                    ["- " + e[0] + ": " + rewrite_some_errors(e[1]) for e in errs]
+                )
                 raise Exception(f"{name} raised validation errors:\n{msg}")
         elif callable(schema):
             name = f"anonymous validation function #{i}"
