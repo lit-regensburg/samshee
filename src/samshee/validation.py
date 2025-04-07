@@ -43,6 +43,22 @@ illuminasamplesheetv2schema = {
     "title": "illumina SampleSheetv2 schema spec",
     "type": "object",
     "required": ["Header", "Reads"],
+    "$defs": {
+        "ifStringThenAscii": {
+            "if": {"type": "string"},
+            "then": {"pattern": "^[\x00-\x7f]*$"},
+        }
+    },
+    "additionalProperties": {  # all section names
+        "oneOf": [
+            {
+                "type": "object",
+                "propertyNames": {"pattern": "^[a-zA-Z0-9_]+$"},
+                "$ref": "#/$defs/ifStringThenAscii",
+            },
+            {"type": "array"},
+        ]
+    },
     "properties": {
         "Header": {
             "type": "object",
@@ -59,18 +75,23 @@ illuminasamplesheetv2schema = {
                 "RunDescription": {
                     "type": "string",
                     "description": "Description of the run",
+                    "pattern": "^[\x00-\x7f]*$",
                 },
                 "Instrument Type": {
                     "type": "string",
                     "description": "The instrument name",
                     "example": ["NextSeq 1000", "NextSeq 2000"],
+                    "pattern": "^[\x00-\x7f]*$",
                 },
                 "InstrumentPlatform": {
                     "type": "string",
                     "description": "The instrument platform name",
                     "example": ["NextSeq 1000", "NextSeq 2000"],
+                    "pattern": "^[\x00-\x7f]*$",
                 },
             },
+            "additionalProperties": {"$ref": "#/$defs/ifStringThenAscii"},
+            "propertyNames": {"pattern": "^[a-zA-Z0-9_]+$"},
         },
         "Reads": {
             "type": "object",
@@ -108,6 +129,7 @@ illuminasamplesheetv2schema = {
                     "value must be consistent with the sum of the Index 2 section of OverrideCycles.",
                 },
             },
+            "additionalProperties": False,
         },
         "Sequencing_Settings": {
             "type": "object",
