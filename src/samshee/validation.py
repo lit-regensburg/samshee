@@ -1,11 +1,8 @@
 import itertools
 import re
-from typing import Callable, cast, Mapping, Tuple, Optional
-
-import json
+from typing import Callable, cast, Optional
 
 from jsonschema import Draft202012Validator
-from jsonschema.exceptions import ErrorTree, best_match
 
 from samshee.sectionedsheet import SectionedSheet, Settings, Data
 
@@ -485,7 +482,7 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
 
     def index_distances(
         indices: list[list[str]],
-    ) -> list[Tuple[list[int], list[str], list[str]]]:
+    ) -> list[tuple[list[int], list[str], list[str]]]:
         """returns the pairs of indices and their Hammon distances.
         Indices is an array to account for multiple indices.
         For every pair, the array of distances (one for each index) and the two indices compared are returned
