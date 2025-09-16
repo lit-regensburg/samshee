@@ -203,6 +203,19 @@ illuminasamplesheetv2schema = {
                         "description": "The ID of the sample. Separate each identifier with a dash or underscore.",
                         "examples": ["Sample1-DQB1-022515"],
                     },
+                    "index": {
+                        "type": "string",
+                        "pattern": r"^[ACTG]+$",
+                        "description": "The index sequence associated with the sample. "
+                        "Required when sequencing more than one sample.",
+                    },
+                    "index2": {
+                        "type": "string",
+                        "pattern": r"^[ACTG]+$",
+                        "description": "The second index sequence associated with the sample. Make sure the second "
+                        "index (i5) adapter sequences are in forward orientation. DRAGEN automatically "
+                        "reverse complements i5 indexes during secondary analysis.",
+                    },
                     "Index": {
                         "type": "string",
                         "pattern": r"^[ACTG]+$",
@@ -395,11 +408,13 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
         # Sample_ID do not need to be unique?!
         convertdata = cast(Data, doc["BCLConvert_Data"])
         if len(convertdata) > 1:
-            if not all(["Index" in sample for sample in convertdata]):
+            if not all(
+                ["index" in sample or "Index" in sample for sample in convertdata]
+            ):
                 raise SamsheeValidationException(
                     "No Index found in BCLConvert_Data, although it contains more than one sample"
                 )
-            index1 = [i["Index"] for i in convertdata]
+            index1 = [i["Index"] if "Index" in i else i["index"] for i in convertdata]
             minindex1length = cycles["Index1Cycles"].count("I")
             maxindex1length = len(cycles["Index1Cycles"])
             if not all(
@@ -412,8 +427,10 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
                     f"(At least some) First indices of the samples have a different length than what is specified in OverrideCycles ({minindex1length})"
                 )
 
-            if "Index2" in convertdata[0]:
-                index2 = [i["Index2"] for i in convertdata]
+            if "Index2" in convertdata[0] or "index2" in convertdata[0]:
+                index2 = [
+                    i["Index2"] if "Index2" in i else i["index2"] for i in convertdata
+                ]
                 index = [i1 + i2 for i1, i2 in zip(index1, index2)]
                 minindex2length = cycles["Index2Cycles"].count("I")
                 maxindex2length = len(cycles["Index2Cycles"])
@@ -460,7 +477,7 @@ def basespacelogic(doc: SectionedSheet) -> None:
     convertsamples = {x["Sample_ID"]: x for x in cast(Data, doc["BCLConvert_Data"])}
     commonkeys = list(set(cloudsamples.keys()).intersection(set(convertsamples)))
     for sampleid in commonkeys:
-        for index in ["Index", "Index2"]:
+        for index in ["Index", "Index2", "index", "index2"]:
             if index in cloudsamples[sampleid] and index in convertsamples[sampleid]:
                 if cloudsamples[sampleid][index] != convertsamples[sampleid][index]:
                     raise SamsheeValidationException(
@@ -581,10 +598,15 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
                     raise SamsheeValidationException(msg)
 
     convdata = cast(Data, doc["BCLConvert_Data"])
-    if "Index" in convdata[0] and "Index2" in convdata[0]:
+    if ("Index" in convdata[0] or "index" in convdata[0]) and (
+        "Index2" in convdata[0] or "index2" in convdata[0]
+    ):
         check_index(
             doc,
-            ["Index", "Index2"],
+            [
+                "Index" if "Index" in convdata[0] else "index",
+                "Index2" if "Index2" in convdata[0] else "index2",
+            ],
             ["BarcodeMismatchesIndex1", "BarcodeMismatchesIndex2"],
             mindist,
         )
@@ -593,6 +615,10 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
         check_index(doc, "Index", "BarcodeMismatchesIndex1", mindist)
     elif "Index2" in convdata[0]:
         check_index(doc, "Index2", "BarcodeMismatchesIndex2", mindist)
+    elif "index" in convdata[0]:
+        check_index(doc, "index", "BarcodeMismatchesIndex1", mindist)
+    elif "index2" in convdata[0]:
+        check_index(doc, "index2", "BarcodeMismatchesIndex2", mindist)
 
 
 # this is implemented according to https://support-docs.illumina.com/IN/NextSeq10002000/Content/SHARE/SampleSheetv2/SampleSheetValidation_fNS_m2000_m1000.htm

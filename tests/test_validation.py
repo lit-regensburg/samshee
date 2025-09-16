@@ -9,6 +9,7 @@ from samshee.validation import (
 import samshee.validation as val
 from samshee.sectionedsheet import SectionedSheet
 from referencing.exceptions import Unresolvable
+from samshee.samplesheetv2 import SampleSheetV2
 
 
 def test_if_check_index_distance_accepts_only_mindists_larger_than_0():
@@ -254,3 +255,33 @@ def test_if_unknown_schema_throws():
                 {"$ref": "https://google.com"},
             ],
         )
+
+
+def test_if_basic_v2sheet_is_validated() -> None:
+    sheet = SectionedSheet(
+        {
+            "Header": {"FileFormatVersion": 2},
+            "Reads": {"Read1Cycles": 20, "Index1Cycles": 4},
+            "BCLConvert_Settings": {"SoftwareVersion": "2.2.2"},
+            "BCLConvert_Data": [
+                {"Sample_ID": "a", "Index": "ACAA"},
+                {"Sample_ID": "b", "Index": "ACTT"},
+            ],
+        }
+    )
+    SampleSheetV2(sheet)
+
+
+def test_if_lowercase_index_is_accepted() -> None:
+    sheet = SectionedSheet(
+        {
+            "Header": {"FileFormatVersion": 2},
+            "Reads": {"Read1Cycles": 20, "Index1Cycles": 4},
+            "BCLConvert_Settings": {"SoftwareVersion": "2.2.2"},
+            "BCLConvert_Data": [
+                {"Sample_ID": "a", "index": "ACAA"},
+                {"Sample_ID": "b", "index": "ACTT"},
+            ],
+        }
+    )
+    SampleSheetV2(sheet)
