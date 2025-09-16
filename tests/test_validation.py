@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 import pytest
-from samshee.validation import check_index_distance, parse_overrideCycles, validate
+from samshee.validation import (
+    SamsheeValidationException,
+    check_index_distance,
+    parse_overrideCycles,
+    validate,
+)
 import samshee.validation as val
 from samshee.sectionedsheet import SectionedSheet
+from referencing.exceptions import Unresolvable
 
 
 def test_if_check_index_distance_accepts_only_mindists_larger_than_0():
-    with pytest.raises(ValueError):
+    with pytest.raises(val.SamsheeValidationException):
         check_index_distance(
             SectionedSheet(
                 {
@@ -40,7 +46,7 @@ def test_if_mindist_is_used_if_given_explicitly():
     # However, now we set mindist = 3 explicitly, meaning the barcodes should be different in at least three positions
     # (equivalently in this case, we could have set barcodemismatches = 2. If we had two indices, mindist would apply to the combined)
     # therefore, the following should now raise an exception, because it violates the mindist requirement (but not the BarcodeMismatches Requirement)
-    with pytest.raises(Exception):
+    with pytest.raises(val.SamsheeValidationException):
         check_index_distance(
             SectionedSheet(
                 {
@@ -89,7 +95,7 @@ def test_if_check_index_distance_accepts_two_indices_with_different_mismatches()
         )
     )
     # if we set the first to one, this should reject:
-    with pytest.raises(Exception):
+    with pytest.raises(val.SamsheeValidationException):
         check_index_distance(
             SectionedSheet(
                 {
@@ -106,7 +112,7 @@ def test_if_check_index_distance_accepts_two_indices_with_different_mismatches()
             )
         )
     # equally, if we set mindist = 2, this should fail:
-    with pytest.raises(Exception):
+    with pytest.raises(val.SamsheeValidationException):
         check_index_distance(
             SectionedSheet(
                 {
@@ -143,7 +149,7 @@ def test_if_check_index_distance_accepts_two_indices_with_one_uniform():
 
 
 def test_if_check_index_distance_rejects_two_indices_with_two_uniform():
-    with pytest.raises(Exception):
+    with pytest.raises(val.SamsheeValidationException):
         check_index_distance(
             SectionedSheet(
                 {
@@ -160,7 +166,7 @@ def test_if_check_index_distance_rejects_two_indices_with_two_uniform():
 
 
 def test_if_check_index_distance_accepts_two_indices_that_are_different():
-    with pytest.raises(Exception):
+    with pytest.raises(val.SamsheeValidationException):
         check_index_distance(
             SectionedSheet(
                 {
@@ -218,7 +224,9 @@ def test_if_sheet_without_fileversion_throws():
             ],
         }
     )
-    with pytest.raises(Exception, match="FileFormatVersion: 2 was expected"):
+    with pytest.raises(
+        val.SamsheeValidationException, match="FileFormatVersion: 2 was expected"
+    ):
         validate(
             sheet,
             validation=[
@@ -239,7 +247,7 @@ def test_if_unknown_schema_throws():
             ],
         }
     )
-    with pytest.raises(Exception, match="Unresolvable"):
+    with pytest.raises(Unresolvable):
         validate(
             sheet,
             validation=[

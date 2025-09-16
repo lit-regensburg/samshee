@@ -14,6 +14,12 @@ from urllib.parse import urlsplit
 from pathlib import Path
 
 
+class SamsheeValidationException(Exception):
+    """An exception occured during validation - the samplesheet is invalid."""
+
+    pass
+
+
 @referencing.retrieval.to_cached_resource()
 def retrieve_cached(uri: str):
     parsed = urlsplit(uri)
@@ -266,7 +272,7 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
 
     cycles = cyclestr.split(";")
     if len(cycles) < 1:
-        raise Exception(
+        raise SamsheeValidationException(
             f"OverrideCycles {cyclestr} cannot be parsed to a cycle sequence."
         )
     res = {"Read1Cycles": expand(cycles[0])}
@@ -286,7 +292,7 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
             res["Index2Cycles"] = expand(cycles[2])
         else:
             # there may be edge cases. If these occur, then probably one needs to resort to the sequencing settings section.
-            raise Exception(
+            raise SamsheeValidationException(
                 "cannot determine type of third element in OverrideCycles. Probably an implementation error."
             )
     elif len(cycles) == 4:
@@ -296,21 +302,23 @@ def parse_overrideCycles(cyclestr: str) -> dict[str, str]:
     elif len(cycles) == 1:
         pass
     else:
-        raise Exception(f"OverrideCycles {cyclestr} defines too many elements.")
+        raise SamsheeValidationException(
+            f"OverrideCycles {cyclestr} defines too many elements."
+        )
     if not is_read_or_umi(res["Read1Cycles"]):
-        raise Exception(
+        raise SamsheeValidationException(
             f"Read1Cycles entry in OverrideCycles is not a read: {res['Read1Cycles']}"
         )
     if ("Read2Cycles" in res) and (not is_read_or_umi(res["Read2Cycles"])):
-        raise Exception(
+        raise SamsheeValidationException(
             f"Read2Cycles entry in OverrideCycles is not a read: {res['Read2Cycles']}"
         )
     if ("Index1Cycles" in res) and (is_read(res["Index1Cycles"])):
-        raise Exception(
+        raise SamsheeValidationException(
             f"Index1Cycles entry in OverrideCycles contains reads: {res['Index1Cycles']}"
         )
     if ("Index2Cycles" in res) and (is_read(res["Index2Cycles"])):
-        raise Exception(
+        raise SamsheeValidationException(
             f"Index2Cycles entry in OverrideCycles contains reads: {res['Index2Cycles']}"
         )
     return res
@@ -326,7 +334,7 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
     cycles: dict[str, str] = {}
     if "BCLConvert_Settings" in doc:
         if not "BCLConvert_Data" in doc:
-            raise Exception(
+            raise SamsheeValidationException(
                 "BCLConvert: Only Settings section is present, but BCLConvert_Data is missing."
             )
         convertsettings = cast(Settings, doc["BCLConvert_Settings"])
@@ -335,11 +343,11 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
             cycles = parse_overrideCycles(str(convertsettings["OverrideCycles"]))
             for elemname, elemseq in cycles.items():
                 if elemname not in doc["Reads"]:
-                    raise Exception(
+                    raise SamsheeValidationException(
                         f"BCLConvert_Settings.OverrideCycles defines {elemname}, but it is not specified in the Reads section"
                     )
                 if int(readsettings[elemname]) != len(elemseq):
-                    raise Exception(
+                    raise SamsheeValidationException(
                         f"Reads.{elemname} is {readsettings[elemname]}, but BCLConvert_Settings.OverrideCycles specifies a length of {len(elemseq)}"
                     )
             for elemname in [
@@ -348,7 +356,7 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
                 if i in readsettings.keys()
             ]:
                 if elemname not in cycles.keys():
-                    raise Exception(
+                    raise SamsheeValidationException(
                         f"Reads defines {elemname}, but BCLConvert_Settings.OverrideCycles {convertsettings['OverrideCycles']} is incompatible with it."
                     )
         else:
@@ -362,18 +370,18 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
             if len(cast(str, convertsettings["AdapterRead1"])) > cast(
                 int, readsettings["Read1Cycles"]
             ):
-                raise Exception(
+                raise SamsheeValidationException(
                     f"BCLConvert_Settings.AdapterRead1 is longer then Reads.Read1Cycles"
                 )
         if "AdapterRead2" in doc["BCLConvert_Settings"]:
             if "Read2Cycles" not in doc["Reads"]:
-                raise Exception(
+                raise SamsheeValidationException(
                     "AdapterRead2 defined in BCLConvert_Settings, but no Read2Cycles entry in Reads"
                 )
             if len(cast(str, convertsettings["AdapterRead2"])) > cast(
                 int, readsettings["Read2Cycles"]
             ):
-                raise Exception(
+                raise SamsheeValidationException(
                     "BCLConvert_Settings.AdapterRead2 is longer then Reads.Read2Cycles"
                 )
         # The "spec" also says:
@@ -381,14 +389,14 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
         # but this conflicts with a default value of 1.
     if "BCLConvert_Data" in doc:
         if not "BCLConvert_Settings" in doc:
-            raise Exception(
+            raise SamsheeValidationException(
                 "BCLConvert: Only Data section is present, but BCLConvert_Settings is missing."
             )
         # Sample_ID do not need to be unique?!
         convertdata = cast(Data, doc["BCLConvert_Data"])
         if len(convertdata) > 1:
             if not all(["Index" in sample for sample in convertdata]):
-                raise Exception(
+                raise SamsheeValidationException(
                     "No Index found in BCLConvert_Data, although it contains more than one sample"
                 )
             index1 = [i["Index"] for i in convertdata]
@@ -400,7 +408,7 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
                     for index in index1
                 ]
             ):
-                raise Exception(
+                raise SamsheeValidationException(
                     f"(At least some) First indices of the samples have a different length than what is specified in OverrideCycles ({minindex1length})"
                 )
 
@@ -418,7 +426,7 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
                         for index in index2
                     ]
                 ):
-                    raise Exception(
+                    raise SamsheeValidationException(
                         f"(At least some) Second indices of the samples have a different length than what is specified in OverrideCycles ({minindex2length})"
                     )
             else:
@@ -431,19 +439,19 @@ def illuminasamplesheetv2logic(doc: SectionedSheet) -> None:
 
             # finally, check if there are non-unique indices:
             if len(set(index)) != len(index):
-                raise Exception("Indices are not unique.")
+                raise SamsheeValidationException("Indices are not unique.")
 
 
 def basespacelogic(doc: SectionedSheet) -> None:
     if "Cloud_Data" not in doc:
-        raise Exception("no Cloud_Data section")
+        raise SamsheeValidationException("no Cloud_Data section")
     if "BCLConvert_Data" not in doc:
-        raise Exception("no BCLConvert_Data section")
+        raise SamsheeValidationException("no BCLConvert_Data section")
     cloud_sample_ids = [i["Sample_ID"] for i in cast(Data, doc["Cloud_Data"])]
     bclconvert_sample_ids = [i["Sample_ID"] for i in cast(Data, doc["BCLConvert_Data"])]
     for convert_id in bclconvert_sample_ids:
         if convert_id not in cloud_sample_ids:
-            raise Exception(
+            raise SamsheeValidationException(
                 f"Sample_ID {convert_id} is defined in the BCLConvert_Data section, but not in the Cloud_Data section."
             )
     # TODO should we test also for the reverse? I.e. is it allowed that there are samples defined in Cloud_Data that are not in BCLConvert_Data
@@ -455,7 +463,7 @@ def basespacelogic(doc: SectionedSheet) -> None:
         for index in ["Index", "Index2"]:
             if index in cloudsamples[sampleid] and index in convertsamples[sampleid]:
                 if cloudsamples[sampleid][index] != convertsamples[sampleid][index]:
-                    raise Exception(
+                    raise SamsheeValidationException(
                         f"Index of {sampleid} does not match between Cloud_Data ({cloudsamples[sampleid][index]}) and BCLConvert_Data ({convertsamples[sampleid][index]}) "
                     )
 
@@ -467,7 +475,7 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
     """
 
     if mindist is not None and mindist < 1:
-        raise ValueError("minimal index distance must be >= 1.")
+        raise SamsheeValidationException("minimal index distance must be >= 1.")
 
     def pairwise_index_distance(a: str, b: str) -> int:
         """returns the number of unequal digits (Hamming distance) between the two sequences.
@@ -491,7 +499,7 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
             # if there is only one index entry, we return the one entry and the length of the indices
             return [([len(i) for i in indices[0]], indices[0], indices[0])]
         elif len(indices) == 0:
-            raise Exception("no indices.")
+            raise SamsheeValidationException("no indices.")
 
         return [
             (
@@ -560,7 +568,7 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
                         if matchingindex[0][i] <= mismatches[i]:
                             msg += f"{indexname} differs by {matchingindex[0][i]} <= {mismatches[i]} "
                     msg += ". "
-                raise Exception(msg)
+                raise SamsheeValidationException(msg)
 
             if mindist is not None:
                 combined = [["".join(i)] for i in index]
@@ -570,7 +578,7 @@ def check_index_distance(doc: SectionedSheet, mindist: Optional[int] = None) -> 
                     msg = "Combined index is too close and undistinguishable: "
                     for matchingindex in matchingindices:
                         msg += f"Entries of index pair ({str(matchingindex[1])}, {str(matchingindex[2])}) are undistinguishable because their distance is {matchingindex[0][0]} < {mindist} (which is the explicitly given combined minimal distance)"
-                    raise Exception(msg)
+                    raise SamsheeValidationException(msg)
 
     convdata = cast(Data, doc["BCLConvert_Data"])
     if "Index" in convdata[0] and "Index2" in convdata[0]:
@@ -620,13 +628,15 @@ def nextseq1k2klogic(doc: SectionedSheet) -> None:
                 str(cast(Settings, doc["BCLConvert_Settings"])["OverrideCycles"])
             )
             if "U" in cycles["Index1Cycles"]:
-                raise Exception("Index1 typically does not contain UMIs")
+                raise SamsheeValidationException(
+                    "Index1 typically does not contain UMIs"
+                )
             if (
                 ("Index2Cycles" in cycles)
                 and (len(cycles["Index2Cycles"]) > 10)
                 and (not "U" in cycles["Index2Cycles"])
             ):
-                raise Exception(
+                raise SamsheeValidationException(
                     "Reads.Index2 must have a maximum length of 10 if it contains only an index and no UMIs."
                 )
 
@@ -658,7 +668,6 @@ def validate(
                 )
 
     def rewrite_some_errors(message) -> str:
-        print(message)
         message = re.sub(
             r"(.*)does not match '\^\[\\x00-\\x7f\]\*\$",
             r"\1contains non-ASCII characters.",
@@ -676,20 +685,24 @@ def validate(
             for err in v:
                 errs.append((err.json_path, err.message))
             if len(errs) == 1:
-                raise Exception(
+                raise SamsheeValidationException(
                     f"{name} raised validation error: {errs[0][0]}: {rewrite_some_errors(errs[0][1])}"
                 )
             elif len(errs) > 1:
                 msg = "\n".join(
                     ["- " + e[0] + ": " + rewrite_some_errors(e[1]) for e in errs]
                 )
-                raise Exception(f"{name} raised validation errors:\n{msg}")
+                raise SamsheeValidationException(
+                    f"{name} raised validation errors:\n{msg}"
+                )
         elif callable(schema):
             name = f"anonymous validation function #{i}"
             try:
                 schema(doc)
-            except Exception as exc:
-                raise Exception(f"{name} raised validation error: {exc}")
+            except SamsheeValidationException as exc:
+                raise SamsheeValidationException(
+                    f"{name} raised validation error: {exc}"
+                )
         else:
             raise Exception(
                 f"anonymous validator / schema #{i} is not a schema or is not callable."

@@ -54,7 +54,7 @@ with open(filename + '.new', "w") as fh:
 This will give
 
 ``` 
-Exception: anonymous validation function #2 raised validation error: Minimal index distance is 1 between the indices ACTGACTG and ACTGACTT which is less than the expected minimal index distance of 3
+SamsheeValidationException: anonymous validation function #2 raised validation error: Minimal index distance is 1 between the indices ACTGACTG and ACTGACTT which is less than the expected minimal index distance of 3
 ```
 
 The first two validators (`illuminasamplesheetv2schema` and `illuminasamplesheetv2logic`) are highly recommended and are meant to enforce illumina® specifications so that the sample sheet is accepted by their tools.
@@ -100,12 +100,13 @@ A SampleSheetV2 is constructed from a SectionedSheet that passes a sequence of v
 
 Validation of a sample sheet only happens at construction (unless `validators = None` or `[]`), but intentionally not when a sample sheet is manipulated to allow for intermediate states that would not pass validation (e.g. conflicting values for `Reads.Index1` and `BCLConvert.OverrideCycles`). However, by default, validation is performed when the sample sheet is rendered to a string or written out. This ensures that all output adheres to all listed validators.
 
-Further custom validation beyond the illumina® spec can happen by json schema validation or calling a function with the SectionedSheet as an argument, i.e.
+Further custom validation beyond the illumina® spec can happen by json schema validation or calling a function with the SectionedSheet as an argument and raising `SamsheeValidationException` in the case of an invalid sheet, i.e.
 
 ``` python
+from samshee.validation import  SamsheeValidationException
 def my_validator(doc: SectionedSheet) -> None:
     if 'myapp' not in doc:
-        raise Exception('sheet does not include settings for myapp.')
+        raise SamsheeValidationException('sheet does not include settings for myapp.')
 ```
 
 This would be equivalent to a json-schema
@@ -123,12 +124,12 @@ The following example would guarantee that the sample shield will adhere to illu
 
 ``` python
 from samshee import SectionedSheet, SampleSheetV2, read_sectionedsheet
-from samshee.validation import illuminasamplesheetv2schema, illuminasamplesheetv2logic
+from samshee.validation import illuminasamplesheetv2schema, illuminasamplesheetv2logic, SamsheeValidationException
 
 def my_validation_function(sectionedsheet : SectionedSheet) -> None:
     # do checks here and raise exceptions.
     if 'myapp' not in doc:
-        raise Exception('sheet does not include settings for myapp.')
+        raise SamsheeValidationException('sheet does not include settings for myapp.')
     
 my_schema = {} # any json schema
     
