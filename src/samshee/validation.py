@@ -199,7 +199,7 @@ illuminasamplesheetv2schema = {
                     "Sample_ID": {
                         "type": "string",
                         "pattern": r"^[a-zA-Z0-9\-_]+$",
-                        "maxLength": 40,
+                        "maxLength": 60,
                         "description": "The ID of the sample. Separate each identifier with a dash or underscore.",
                         "examples": ["Sample1-DQB1-022515"],
                     },
