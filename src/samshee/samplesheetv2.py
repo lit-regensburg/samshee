@@ -11,10 +11,7 @@ from samshee.sectionedsheet import (
     read_sectionedsheet,
     parse_sectionedsheet_from_json,
 )
-from samshee.validation import (
-    validate,
-    illuminasamplesheetv2logic,
-)
+from samshee.validation import validate, illuminasamplesheetv2logic, adjust_value_types
 from samshee.validation import registry as samsheeschemaregistry
 
 
@@ -33,7 +30,14 @@ class SampleSheetV2:
         registry=samsheeschemaregistry,
     ) -> None:
         """Parsing from"""
-        validate(cast(SectionedSheet, secsheet), validation, registry=registry)
+        doc = adjust_value_types(
+            secsheet, [schema for schema in validation if isinstance(schema, dict)]
+        )
+        validate(
+            doc,
+            validation,
+            registry=registry,
+        )
         self.validation = validation
         self.registry = registry
 
@@ -45,22 +49,20 @@ class SampleSheetV2:
             return k
 
         self.applications: OrderedDict[str, dict[str, Section]] = OrderedDict()
-        for key in secsheet.keys():
+        for key in doc.keys():
             sectionname = secname(key)
             if key.endswith("_Settings"):
                 if sectionname not in self.applications:
                     self.applications[sectionname] = dict[str, Settings | Data]()
-                self.applications[sectionname]["settings"] = cast(
-                    Settings, secsheet[key]
-                )
+                self.applications[sectionname]["settings"] = cast(Settings, doc[key])
             elif key.endswith("_Data"):
                 if sectionname not in self.applications:
                     self.applications[sectionname] = dict()
-                self.applications[sectionname]["data"] = secsheet[key]
+                self.applications[sectionname]["data"] = doc[key]
             elif key == "Header":
-                self.header = Settings(secsheet["Header"])
+                self.header = Settings(doc["Header"])
             elif key == "Reads":
-                self.reads = secsheet["Reads"]
+                self.reads = doc["Reads"]
 
     def to_sectionedsheet(self, validate_schema=True) -> SectionedSheet:
         """Constructs a SectionedSheet, unless validate_schema is False, the sheet is revalidated"""
