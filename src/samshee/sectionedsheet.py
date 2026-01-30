@@ -204,7 +204,6 @@ def parse_data(contents: str) -> Data:
 
     # Cast values that look like int/float from string
     for item in d:
-        print(f"cast value {item}")
         item.update((k, attempt_cast(v)) for k, v in item.items())
 
     return d
