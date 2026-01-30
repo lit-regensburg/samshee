@@ -683,7 +683,6 @@ def adjust_value_types(
     """
 
     def cast_str(value: int | float | str, typestr: str) -> int | float | str:
-        print(f"casting value {value} to {typestr}")
         if typestr == "string":
             return str(value)
         elif typestr == "integer":
@@ -696,7 +695,6 @@ def adjust_value_types(
 
     def adjust_value_types_object(obj: dict, schema: dict) -> dict:
         assert schema["type"] == "object"
-        print("Casting to Object")
         new = obj.copy()
         for k, v in obj.items():
             if schema["properties"][k]["type"] == "object":
@@ -708,8 +706,6 @@ def adjust_value_types(
         return new
 
     def adjust_value_types_Array(obj: Array, schema: dict) -> Array:
-        print("Casting to Array")
-        print(f'array: {schema["type"]}')
         assert schema["type"] == "array"
         if "items" not in schema or "type" not in schema["items"]:
             return obj
@@ -720,7 +716,6 @@ def adjust_value_types(
             return Array([cast_str(e, arrtype) for e in obj])
 
     def adjust_value_types_Data(obj: Data, schema: dict) -> Data:
-        print(f"adjust_value_types_Data: schema = {schema}")
         return Data(adjust_value_types_Array(obj, schema))
 
     def adjust_value_types_Settings(obj: Settings, schema: dict) -> Settings:
@@ -749,13 +744,11 @@ def adjust_value_types(
         # adjust for each schema that has something to say about that section:
         for schema in schemas:
             if "$ref" in schema:
-                print(f'resolving {schema["$ref"]}')
                 schema = registry.contents(schema["$ref"])
             assert "type" in schema and schema["type"] == "object"
             assert "properties" in schema
 
             if sectionname in schema["properties"].keys():
-                print(f"adjust value type of {sectionname}")
                 fixedSheet[sectionname] = adjust_value_types_Section(
                     fixedSheet[sectionname], schema["properties"][sectionname]
                 )
