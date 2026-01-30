@@ -116,13 +116,15 @@ class SectionedSheet(OrderedDict[str, Section]):
 
 
 def attempt_cast(value: str) -> ValueType:
+    int_re = r"^-?[0-9]+$"  # only decimal ints, no special characters except minus
+    float_re = r"^-?[0-9]+\.[0-9]+$"
     try:
-        return int(value)
+        if re.match(int_re, value):
+            return int(value)
+        elif re.match(float_re, value):
+            return float(value)
     except:
-        pass
-    try:
-        return float(value)
-    except:
+        # if value is not parsable, return the string
         pass
     return value
 
@@ -202,6 +204,7 @@ def parse_data(contents: str) -> Data:
 
     # Cast values that look like int/float from string
     for item in d:
+        print(f"cast value {item}")
         item.update((k, attempt_cast(v)) for k, v in item.items())
 
     return d

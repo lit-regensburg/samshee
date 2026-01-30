@@ -315,3 +315,18 @@ def test_if_lowercase_index_is_accepted() -> None:
         }
     )
     SampleSheetV2(sheet)
+
+
+def test_if_numeric_sampleids_are_accepted() -> None:
+    sheet = SectionedSheet(
+        {
+            "Header": {"FileFormatVersion": 2},
+            "Reads": {"Read1Cycles": 20, "Index1Cycles": 4},
+            "BCLConvert_Settings": {"SoftwareVersion": "2.2.2"},
+            "BCLConvert_Data": [
+                {"Sample_ID": 1, "index": "ACAA"},
+                {"Sample_ID": 2, "index": "ACTT"},
+            ],
+        }
+    )
+    SampleSheetV2(sheet)

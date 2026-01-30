@@ -2,9 +2,9 @@ import itertools
 import re
 from typing import Callable, cast, Optional
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, RefResolver
 
-from samshee.sectionedsheet import SectionedSheet, Settings, Data
+from samshee.sectionedsheet import SectionedSheet, Settings, Data, Section, Array
 
 from referencing import Registry, Resource
 import requests
@@ -16,6 +16,12 @@ from pathlib import Path
 
 class SamsheeValidationException(Exception):
     """An exception occured during validation - the samplesheet is invalid."""
+
+    pass
+
+
+class SamsheeImplementationException(Exception):
+    """The sheet cannot be validated - The implementation is incomplete."""
 
     pass
 
@@ -665,6 +671,95 @@ def nextseq1k2klogic(doc: SectionedSheet) -> None:
                 raise SamsheeValidationException(
                     "Reads.Index2 must have a maximum length of 10 if it contains only an index and no UMIs."
                 )
+
+
+def adjust_value_types(
+    doc: SectionedSheet, schemas: dict | list[dict]
+) -> SectionedSheet:
+    """
+    adjusts all value types of a doc to match the schema, if possible and returns that new doc as copy.
+    raises errors if this is not possible and ignores missing sections etc entirely
+    (does not attempt to do any validation)
+    """
+
+    def cast_str(value: int | float | str, typestr: str) -> int | float | str:
+        print(f"casting value {value} to {typestr}")
+        if typestr == "string":
+            return str(value)
+        elif typestr == "integer":
+            return int(value)
+        elif typestr == "number":
+            return float(value)
+        # elif typestr == "object":
+        else:
+            return value
+
+    def adjust_value_types_object(obj: dict, schema: dict) -> dict:
+        assert schema["type"] == "object"
+        print("Casting to Object")
+        new = obj.copy()
+        for k, v in obj.items():
+            if schema["properties"][k]["type"] == "object":
+                new[k] = adjust_value_types_object(v, schema["properties"][k])
+            elif schema["properties"][k]["type"] == "array":
+                new[k] = adjust_value_types_Array(v, schema["properties"][k])
+            else:
+                new[k] = cast_str(v, schema["properties"][k]["type"])
+        return new
+
+    def adjust_value_types_Array(obj: Array, schema: dict) -> Array:
+        print("Casting to Array")
+        print(f'array: {schema["type"]}')
+        assert schema["type"] == "array"
+        if "items" not in schema or "type" not in schema["items"]:
+            return obj
+        arrtype: str = schema["items"]["type"]
+        if arrtype == "object":
+            return Array([adjust_value_types_object(v, schema["items"]) for v in obj])
+        else:
+            return Array([cast_str(e, arrtype) for e in obj])
+
+    def adjust_value_types_Data(obj: Data, schema: dict) -> Data:
+        print(f"adjust_value_types_Data: schema = {schema}")
+        return Data(adjust_value_types_Array(obj, schema))
+
+    def adjust_value_types_Settings(obj: Settings, schema: dict) -> Settings:
+        assert schema["type"] == "object"
+        newobj = obj.copy()
+        for k, v in obj.items():
+            if k in schema["properties"] and "type" in schema["properties"][k]:
+                newobj[k] = cast_str(obj[k], schema["properties"][k]["type"])
+
+        return newobj
+
+    def adjust_value_types_Section(obj: Section, schema: dict) -> Section:
+        if isinstance(obj, Settings):
+            return adjust_value_types_Settings(obj, schema)
+        elif isinstance(obj, Data):
+            return adjust_value_types_Data(obj, schema)
+        elif isinstance(obj, Array):
+            return adjust_value_types_Array(obj, schema)
+        else:
+            raise SamsheeImplementationException(f"Unknown section type: {type(obj)}")
+
+    fixedSheet = SectionedSheet()
+    for sectionname, sectionobj in doc.items():
+        # copy:
+        fixedSheet[sectionname] = sectionobj
+        # adjust for each schema that has something to say about that section:
+        for schema in schemas:
+            if "$ref" in schema:
+                print(f'resolving {schema["$ref"]}')
+                schema = registry.contents(schema["$ref"])
+            assert "type" in schema and schema["type"] == "object"
+            assert "properties" in schema
+
+            if sectionname in schema["properties"].keys():
+                print(f"adjust value type of {sectionname}")
+                fixedSheet[sectionname] = adjust_value_types_Section(
+                    fixedSheet[sectionname], schema["properties"][sectionname]
+                )
+    return fixedSheet
 
 
 def validate(
