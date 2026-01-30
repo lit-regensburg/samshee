@@ -7,7 +7,7 @@ from samshee.validation import (
     validate,
 )
 import samshee.validation as val
-from samshee.sectionedsheet import SectionedSheet
+from samshee.sectionedsheet import SectionedSheet, Settings, Data
 from referencing.exceptions import Unresolvable
 from samshee.samplesheetv2 import SampleSheetV2
 
@@ -255,6 +255,36 @@ def test_if_unknown_schema_throws():
                 {"$ref": "https://google.com"},
             ],
         )
+
+
+def test_if_sectionedsheet_is_constructable_from_object() -> None:
+    sheet = SectionedSheet(
+        {
+            "Header": {"FileFormatVersion": 2},
+            "Reads": {"Read1Cycles": 20, "Index1Cycles": 4},
+            "BCLConvert_Settings": {"SoftwareVersion": "2.2.2"},
+            "BCLConvert_Data": [
+                {"Sample_ID": "a", "Index": "ACAA"},
+                {"Sample_ID": "b", "Index": "ACTT"},
+            ],
+        }
+    )
+
+
+def test_if_sectionedsheet_is_constructable_from_Sections() -> None:
+    sheet = SectionedSheet(
+        {
+            "Header": Settings({"FileFormatVersion": 2}),
+            "Reads": Settings({"Read1Cycles": 20, "Index1Cycles": 4}),
+            "BCLConvert_Settings": Settings({"SoftwareVersion": "2.2.2"}),
+            "BCLConvert_Data": Data(
+                [
+                    {"Sample_ID": "a", "Index": "ACAA"},
+                    {"Sample_ID": "b", "Index": "ACTT"},
+                ]
+            ),
+        }
+    )
 
 
 def test_if_basic_v2sheet_is_validated() -> None:
