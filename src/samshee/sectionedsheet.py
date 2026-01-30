@@ -86,7 +86,14 @@ class SectionedSheet(OrderedDict[str, Section]):
     """A ordered dictionary of sections"""
 
     def __init__(self, init=OrderedDict()):
-        super().__init__(init)
+        # convert to our filetypes if not already:
+        od = OrderedDict()
+        for k, v in init.items():
+            if isinstance(v, Section):
+                od[k] = v
+            else:
+                od[k] = guess_section_from_object(v)
+        super().__init__(od)
 
     def __str__(self) -> str:
         """A string representation of the SectionedSheet"""
