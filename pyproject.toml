@@ -35,3 +35,5 @@ dependencies = [
 pythonpath = "src"
 
 [tool.setuptools_scm]
+[tool.setuptools.dynamic]
+version = {attr = "samshee.__version__"}
