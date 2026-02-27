@@ -123,7 +123,7 @@ Much more complicated use cases are possible, enforcing naming conventions on sa
 The following example would guarantee that the sample shield will adhere to illumina® standards and to our own defined schema (in this case that it has a section "myapp"):
 
 ``` python
-from samshee import SectionedSheet, SampleSheetV2, read_sectionedsheet
+from samshee.samplesheetv2 import SectionedSheet, SampleSheetV2, read_sectionedsheet
 from samshee.validation import illuminasamplesheetv2schema, illuminasamplesheetv2logic, SamsheeValidationException
 
 def my_validation_function(sectionedsheet : SectionedSheet) -> None:
